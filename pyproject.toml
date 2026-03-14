@@ -8,7 +8,9 @@ dependencies = [
     "beautifulsoup4==4.14.3",
     "nltk==3.9.3",
     "mistralai>=1.12.4",
-    "pydantic-settings>=2.0.0"
+    "pydantic-settings>=2.0.0",
+    "spacy>=3.7.0",
+    "fr-core-news-sm>=3.8.0",
 ]
 
 [build-system]
@@ -23,6 +25,9 @@ dev-dependencies = [
     "pytest==8.3.2",
     "ruff>=0.15.5",
 ]
+
+[tool.uv.sources]
+fr-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.8.0/fr_core_news_sm-3.8.0-py3-none-any.whl" }
 
 [tool.ruff]
 line-length = 88

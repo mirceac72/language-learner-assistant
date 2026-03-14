@@ -14,6 +14,7 @@ from nltk.tokenize import word_tokenize
 from ..config import get_settings
 from ..exceptions import WebFetchError
 from ..logging import get_logger
+from .ner_filter import NERFilter
 
 
 class VocabularyExtractor:
@@ -36,6 +37,9 @@ class VocabularyExtractor:
         # Use provided language or default from settings
         effective_language = language or self.settings.default_language
         self.stop_words = set(stopwords.words(effective_language))
+
+        # Initialize NER filter for named entity recognition
+        self.ner_filter = NERFilter(effective_language)
 
         self.logger.debug(
             f"Initialized VocabularyExtractor with language: {effective_language}"
@@ -111,6 +115,9 @@ class VocabularyExtractor:
             f"top_n={effective_top_n}"
         )
 
+        # Identify named entities
+        named_entities = self.ner_filter.get_named_entities(text)
+
         # Tokenize words
         words = word_tokenize(text.lower())
 
@@ -121,6 +128,7 @@ class VocabularyExtractor:
             if word.isalpha()
             and len(word) >= effective_min_length
             and word not in self.stop_words
+            and word not in named_entities
         ]
 
         # Count word frequencies
