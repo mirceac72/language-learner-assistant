@@ -16,8 +16,13 @@ class MockLLMClient(LLMClient):
         """Generate mock response"""
         self.call_count += 1
 
+        # Check for quality assessment first (more specific check)
+        if "quality" in prompt and "Assess" in prompt and "Exercise Type:" in prompt:
+            # Mock quality assessment response
+            return "85|Good exercise with clear question and appropriate challenge|Could add more context about word usage"
+
         # Simple mock responses based on prompt content
-        if "fill-in-the-blank" in prompt:
+        elif "fill-in-the-blank" in prompt:
             return "Le chat est sur le ___.|canapé|The cat is on the sofa."
         elif "multiple choice" in prompt:
             return "What does 'pomme' mean?|apple|fruit|red|tree"

@@ -11,6 +11,9 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "spacy>=3.7.0",
     "fr-core-news-sm>=3.8.0",
+    "langgraph>=0.0.16",
+    "langchain>=0.1.0",
+    "langchain-mistralai>=0.1.0",
 ]
 
 [build-system]

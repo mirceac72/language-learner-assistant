@@ -9,18 +9,65 @@ from src.language_learner.models.exercise import DifficultyLevel, Exercise, Exer
 class ExerciseGenerator:
     """Generate language exercises from vocabulary words using LLM"""
 
-    def __init__(self, llm_client: LLMClient) -> None:
+    def __init__(self, llm_client: LLMClient, use_agents: bool = False) -> None:
         """Initialize exercise generator with LLM client.
 
         Args:
             llm_client: LLM client for generating exercises
+            use_agents: Whether to use agent-based workflow (default: False for backward compatibility)
         """
         self.llm = llm_client
+        self.use_agents = use_agents
+
+        if use_agents:
+            try:
+                from src.language_learner.exercises.agents.exercise_workflow import (
+                    ExerciseWorkflow,
+                )
+                self.workflow = ExerciseWorkflow(llm_client)
+            except ImportError:
+                print("Agent-based workflow not available, falling back to direct generation")
+                self.use_agents = False
 
     def generate_exercises(
         self, vocabulary_words: list[str], count_per_word: int = 2
     ) -> list[Exercise]:
         """Generate exercises for vocabulary words.
+
+        Args:
+            vocabulary_words: List of vocabulary words
+            count_per_word: Number of exercises per word
+
+        Returns:
+            List of generated exercises
+        """
+        if self.use_agents:
+            return self._generate_exercises_with_agents(vocabulary_words)
+        else:
+            return self._generate_exercises_directly(vocabulary_words, count_per_word)
+
+    def _generate_exercises_with_agents(self, vocabulary_words: list[str]) -> list[Exercise]:
+        """Generate exercises using agent-based workflow.
+
+        Args:
+            vocabulary_words: List of vocabulary words
+
+        Returns:
+            List of generated exercises
+        """
+        try:
+            # Use agent workflow with 2 iterations as specified
+            exercises = self.workflow.run_workflow(vocabulary_words, max_iterations=2)
+            print(f"Agent workflow generated {len(exercises)} approved exercises")
+            return exercises
+        except Exception as e:
+            print(f"Agent workflow failed, falling back to direct generation: {e}")
+            return self._generate_exercises_directly(vocabulary_words)
+
+    def _generate_exercises_directly(
+        self, vocabulary_words: list[str], count_per_word: int = 2
+    ) -> list[Exercise]:
+        """Generate exercises directly (original implementation).
 
         Args:
             vocabulary_words: List of vocabulary words

@@ -25,7 +25,7 @@
 
 ### Running Tests
 ```bash
-python -m pytest tests/ -v
+uv run -m pytest tests/ -v
 ```
 
 ### Running Ruff (Linter)

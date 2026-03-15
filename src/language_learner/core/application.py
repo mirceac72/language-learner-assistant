@@ -17,7 +17,7 @@ class LanguageLearnerApplication:
             llm_client: LLM client for exercise generation and evaluation
         """
         self.llm_client = llm_client
-        self.exercise_generator = ExerciseGenerator(llm_client)
+        self.exercise_generator = ExerciseGenerator(llm_client, True)
         self.answer_evaluator = AnswerEvaluator(llm_client)
         self.current_player = None
 
