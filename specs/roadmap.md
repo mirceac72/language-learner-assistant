@@ -30,10 +30,27 @@ This document outlines the development priorities, milestones, and success metri
 
 1. **Create specifications for existing features**
    - Vocabulary extraction pipeline spec
-   - Exercise generation spec
-   - Agent workflow spec (creator + reviewer)
+   - Exercise generation spec (includes agent workflow)
    - Answer evaluation spec
-   - UI/UX spec for Streamlit interface
+   - UI/UX workflow specs:
+     - UI Creation phase spec (URL input → vocabulary extraction → exercise generation)
+     - UI Practice phase spec (exercise display → answer input → submission)
+     - UI Review phase spec (feedback display → continue → completion)
+
+   **Implementation Plan**:
+   
+   | # | Specification | Files to Reference | Dependencies |
+   |---|---------------|-------------------|--------------|
+   | 1 | `feat-vocabulary-extraction-spec.md` | `web/vocabulary_extractor.py`, `web/ner_filter.py` | None |
+   | 2 | `feat-exercise-generation-spec.md` | `exercises/generator.py`, `exercises/agents/*`, `models/exercise.py` | Vocabulary extraction |
+   | 3 | `feat-answer-evaluation-spec.md` | `evaluation/evaluator.py` | Exercise generation |
+   | 4 | `feat-ui-creation-phase-spec.md` | `app.py`, `run_streamlit.py`, `ui/vocabulary_display.py` | Vocabulary extraction, Exercise generation |
+   | 5 | `feat-ui-practice-phase-spec.md` | `app.py`, `ui/exercise_display.py`, `exercises/player.py` | Answer evaluation |
+   | 6 | `feat-ui-review-phase-spec.md` | `ui/exercise_display.py`, `exercises/player.py` | Practice phase |
+   
+   **Steps**: Analyze code → Create draft specs → Link specs → Review → Finalize
+   
+   **Estimated Effort**: 8-12 hours total
    
 2. **Formalize quality standards**
    - Exercise review criteria and scoring thresholds
@@ -213,6 +230,6 @@ These questions need to be resolved before implementing certain features:
 
 ## Version History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | TBD | - | Initial roadmap document created |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | TBD | Initial roadmap document created |

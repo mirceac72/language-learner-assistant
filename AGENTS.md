@@ -1,32 +1,62 @@
 # Instructions for agents
 
-## Designing and planning
+## Spec Driven Development
 
-When making designing or making plans choose the simplest possible solutions. Generate three alternative options and select the simplest solution. Review the generated solution and make it simpler.
+### Before Starting Work
+Read the specification documents in the `specs` folder:
+- `mission.md` - Mission statement, scope, and development workflow
+- `roadmap.md` - Feature priorities and timeline
+- Relevant feature specification documents (e.g., `feat-*.md`)
+
+Refer to `specs/tech-stack.md` for:
+- Technical stack, architecture, and data flow diagrams
+- Development tools and commands (uv, pytest, ruff)
+- Dependency constraints and package selection guidelines
+
+### Specification Requirements
+All features must have an approved specification before implementation. A complete specification includes:
+- Clear user stories and requirements
+- Technical design with architecture diagrams
+- API interfacess and data models
+- Acceptance criteria
+- Test cases (unit, integration, manual)
+- Dependencies and constraints
+
+### Implementation Workflow
+1. **Read spec** - Review all relevant specification documents
+2. **Validate spec** - Ensure spec is in "Approved" status, not "Draft"
+3. **Implement** - Write code matching spec requirements
+4. **Test** - Write tests defined in spec's Test Cases section
+5. **Verify** - Confirm implementation meets all acceptance criteria
+6. **Update** - Mark spec tasks as complete in implementation plan
+
+### Specification Status Management
+Specifications follow a lifecycle: **Draft → Review → Approved**
+- **Draft**: Initial creation, incomplete sections
+- **Review**: Ready for peer review, all sections complete
+- **Approved**: Reviewed and accepted, ready for implementation
+
+Update the status in the spec document header when transitioning between states.
+
+## Designing and Planning
+
+When designing solutions:
+1. Generate three alternative options
+2. Select the simplest solution that meets requirements
+3. Review the selected solution and simplify further
+4. Document the chosen approach and rationale in the spec
 
 ## Naming
 
-Avoid names that are too generic like creator, reviewer or workflow for file names. Use instead exercise_creator, exercise_reviewer, exercise_workflow.
+Avoid generic names like `creator`, `reviewer`, or `workflow` for file names. Use specific names instead:
+- `exercise_creator.py` instead of `creator.py`
+- `exercise_reviewer.py` instead of `reviewer.py`
+- `exercise_workflow.py` instead of `workflow.py`
 
 ## Summaries
 
-When creating summaries of your work, make a maximum 3 paragraphs summary, review the summary and the missing important work that is missing and remove the filler,
-make a second final check and add any missing important work and remove the filler.
-
-## Use uv to manage the Python environment
-
-Do NOT use python directly in bash command lines. Use uv.
-
-Useful uv commands are:
-- `uv add/remove <package>` to manage dependencies
-- `uv sync` to install dependencies declared in pyproject.toml and uv.lock
-- `uv run script.py` to run a script within the uv environment
-- `uv run -m pytest tests/ -v` to run pytest (or any other python tool) within the uv environment. Do NOT use `python -m pytest tests/ -v`to run the tests. 
-- `uv run ruff check --fix` to run the ruff formating checks and automatically fix the issues
-
-## Packages and dependecies
-
-- Prefer standard Python packages
-- Use as few as possible dependent packages
-- Use only well established Python packages.
-- Use only Python packages whose license is compatible with Apache 2.0 license of the application
+When creating work summaries:
+- Maximum 3 paragraphs
+- First pass: Write summary, identify missing important work, remove filler
+- Second pass: Add any remaining important work, remove more filler
+- Final pass: Verify completeness and conciseness

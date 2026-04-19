@@ -1,7 +1,6 @@
 # Feature Specification Template
 
 **Status**: Template
-**Author**: [Your Name]
 **Created**: [YYYY-MM-DD]
 **Last Updated**: [YYYY-MM-DD]
 **Priority**: [High/Medium/Low]
@@ -290,7 +289,7 @@ Questions that need to be resolved before or during implementation:
 
 ## Changelog
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | [Date] | [Name] | Initial specification created |
-| 1.1 | [Date] | [Name] | Updated based on feedback |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | [Date] | Initial specification created |
+| 1.1 | [Date] | Updated based on feedback |

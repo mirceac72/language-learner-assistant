@@ -116,7 +116,7 @@ Handles core application logic including LLM integration, orchestration, and cli
 
 ### Exercises Module
 
-Manages exercise generation, session management, and the agent-based workflow for creating and reviewing exercises. Includes both direct generation and agent-based orchestration.
+Manages exercise generation, session management, and the agent-based workflow for creating and reviewing exercises using LangGraph orchestration.
 
 ### Evaluation Module
 
@@ -311,6 +311,6 @@ Exercises are evaluated using a 100-point scoring system:
 
 ## Version History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | TBD | - | Initial tech stack document created |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | TBD | Initial tech stack document created |
