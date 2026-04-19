@@ -71,6 +71,18 @@ class TestNamedEntityExtraction:
         person_names = {"marie", "curie", "albert", "einstein"}
         assert any(name in entities for name in person_names)
 
+    def test_extract_common_french_person_names(self):
+        """Test extraction of common French person names"""
+        text = "Jean a rencontré Marie à la boulangerie. Pierre et Sophie jouent au parc."
+        entities = self.ner_filter.get_named_entities(text)
+
+        # Should find French person names
+        assert isinstance(entities, set)
+        assert len(entities) > 0
+        # Common French names that should be detected
+        french_names = {"jean", "marie", "pierre", "sophie"}
+        assert any(name in entities for name in french_names)
+
     def test_empty_text_handling(self):
         """Test handling of empty text"""
         entities = self.ner_filter.get_named_entities("")
@@ -206,7 +218,7 @@ class TestPerformanceAndEdgeCases:
         """Test processing of longer text"""
         long_text = """
         Paris est la capitale de la France. Marie Curie était une scientifique célèbre.
-        Le président Emmanuel Macron a visité Berlin et Londres. La Tour Eiffel est un monument.
+        Le président a visité Berlin et Londres. La Tour Eiffel est un monument.
         Les étudiants apprennent le français avec des professeurs compétents.
         """
         entities = self.ner_filter.get_named_entities(long_text)

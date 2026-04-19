@@ -1,8 +1,8 @@
 # Mistral LLM Client using official mistralai library
 import os
 
-from mistralai import Mistral
-from mistralai.models.usermessage import UserMessage
+from mistralai.client import Mistral
+from mistralai.client.models.usermessage import UserMessage
 
 from src.language_learner.core.llm_interface import LLMClient
 from src.language_learner.exceptions import LLMError

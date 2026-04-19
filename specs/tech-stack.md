@@ -227,6 +227,7 @@ The application uses Pydantic Settings with the following environment variables:
 | Variable | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
 | `WEB_REQUEST_TIMEOUT` | int | No | 10 | Timeout for web page requests |
+| `WEB_REQUEST_MAX_RETRIES` | int | No | 3 | Maximum retries for failed web requests |
 | `USER_AGENT` | str | No | Standard Chrome UA | User agent for HTTP requests |
 
 #### Language Processing Configuration
@@ -301,8 +302,10 @@ Exercises are evaluated using a 100-point scoring system:
 | Add dependency | `uv add <package>` | Add package to pyproject.toml |
 | Remove dependency | `uv remove <package>` | Remove package from pyproject.toml |
 | Install dependencies | `uv sync` | Install all dependencies |
+| Load .env file | `set -o allexport && source .env && set +o allexport` | Reload environment variables from .env file |
 | Run application | `uv run streamlit run app.py` | Start Streamlit app |
 | Run tests | `uv run -m pytest tests/ -v` | Run test suite with verbose output |
+| Run single test file | `uv run -m pytest tests/<test_file.py> -v` | Run a specific test file |
 | Lint check | `uv run ruff check .` | Check code quality |
 | Lint auto-fix | `uv run ruff check --fix .` | Automatically fix lint issues |
 | Format code | `uv run ruff format .` | Format all code |

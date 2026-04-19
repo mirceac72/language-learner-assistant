@@ -195,26 +195,28 @@ Environment variables:
   - [x] Add data flow diagram
   - [x] Define acceptance criteria
 
-- [ ] **Step 3**: Review and refine
-  - [ ] Validate against actual code
-  - [ ] Add test cases for `vocabulary_extractor.py`
+- [x] **Step 3**: Review and refine
+  - [x] Validate against actual code
+  - [x] Add test cases for `vocabulary_extractor.py`
+  - [x] Add integration tests for end-to-end workflow
+  - [x] Implement retry logic for web fetching
   - [x] Identify risks and mitigations
 
-- [ ] **Step 4**: Finalize
-  - [ ] Update status from Draft to Review
-  - [ ] Incorporate feedback
-  - [ ] Mark as Approved
+- [x] **Step 4**: Finalize
+  - [x] Update status from Draft to Review
+  - [x] Incorporate feedback
+  - [x] Mark as Approved
 
 ### Gaps Identified
 The following gaps were identified between the specification requirements and current implementation:
 
-1. **Missing Retry Logic**: The specification requires "Reliability: Retry logic for failed web requests" but `vocabulary_extractor.py:fetch_web_page()` does not implement retry logic for transient failures.
+1. **✓ RESOLVED - Retry Logic**: The specification requires "Reliability: Retry logic for failed web requests". Implementation added to `vocabulary_extractor.py:fetch_web_page()` with exponential backoff for transient errors (ConnectionError, Timeout). Configuration option `web_request_max_retries` added to `config.py`.
 
-2. **Missing Vocabulary Extractor Unit Tests**: Test cases exist for `NERFilter` (`tests/test_ner_filter.py`) but there are no unit tests for `VocabularyExtractor` class methods (`fetch_web_page`, `extract_text_from_html`, `extract_vocabulary`).
+2. **✓ RESOLVED - Vocabulary Extractor Unit Tests**: Created comprehensive unit tests in `tests/test_vocabulary_extractor.py` covering all `VocabularyExtractor` class methods (`fetch_web_page`, `extract_text_from_html`, `extract_vocabulary`) including retry logic, HTML cleaning, stopword filtering, NER integration, and edge cases.
 
-3. **Missing Integration Tests**: No integration tests exist for end-to-end vocabulary extraction workflow (URL → HTML → text → vocabulary with filtering).
+3. **✓ RESOLVED - Integration Tests**: Created integration tests in `tests/test_vocabulary_extraction_integration.py` for end-to-end vocabulary extraction workflow (URL → HTML → text → vocabulary with filtering), including pipeline tests with mocked fetching, configuration testing, and edge case handling.
 
-4. **Performance Considerations**: While configurable timeout exists, there is no streaming or chunked processing for large web pages as mentioned in the risks section.
+4. **Performance Considerations**: While configurable timeout exists, there is no streaming or chunked processing for large web pages as mentioned in the risks section. This is deferred to future optimization if needed.
 
 ---
 
@@ -233,16 +235,19 @@ The following gaps were identified between the specification requirements and cu
 - [ ] Open questions resolved
 
 ### Test Cases
-- [ ] Test fetching valid URL returns HTML content ( See `tests/test_vocabulary_extractor.py` )
-- [ ] Test fetching invalid URL raises WebFetchError ( See `tests/test_vocabulary_extractor.py` )
-- [ ] Test HTML to text extraction removes scripts and styles ( See `tests/test_vocabulary_extractor.py` )
-- [ ] Test vocabulary extraction with French text ( See `tests/test_vocabulary_extractor.py` )
-- [ ] Test stopword filtering removes common words ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test fetching valid URL returns HTML content ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test fetching invalid URL raises WebFetchError ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test HTML to text extraction removes scripts and styles ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test vocabulary extraction with French text ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test stopword filtering removes common words ( See `tests/test_vocabulary_extractor.py` )
 - [x] Test NER filtering removes proper nouns ( See `tests/test_ner_filter.py` )
-- [ ] Test minimum word length filtering ( See `tests/test_vocabulary_extractor.py` )
-- [ ] Test top N results limiting ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test minimum word length filtering ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test top N results limiting ( See `tests/test_vocabulary_extractor.py` )
 - [x] Test with different languages ( See `tests/test_ner_filter.py` )
-- [ ] Test error handling for network failures ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test error handling for network failures ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test retry logic on transient failures ( See `tests/test_vocabulary_extractor.py` )
+- [x] Test end-to-end pipeline ( See `tests/test_vocabulary_extraction_integration.py` )
+- [x] Test configuration settings integration ( See `tests/test_vocabulary_extraction_integration.py` )
 
 ---
 

@@ -23,6 +23,7 @@ class AppSettings(BaseSettings):
 
     # Web scraping configuration
     web_request_timeout: int = Field(10, env="WEB_REQUEST_TIMEOUT")
+    web_request_max_retries: int = Field(3, env="WEB_REQUEST_MAX_RETRIES")
     user_agent: str = Field(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         env="USER_AGENT",
