@@ -54,17 +54,19 @@ class ExerciseReviewerAgent:
                     logger.info(f"Reviewing exercise: {exercise.exercise_type.value} - {exercise.question[:50]}...")
                     review_result = self._review_exercise(exercise, iteration)
 
+                    exercise_details = {
+                        "exercise": exercise
+                    }
+                    if "quality_score" in review_result:
+                        exercise_details["quality_score"] = review_result["quality_score"]
+                    if "feedback" in review_result:
+                        exercise_details["feedback"] = review_result["feedback"]
                     if review_result["approved"]:
-                        reviewed_exercises.append(exercise)
+                        reviewed_exercises.append(exercise_details)
                         logger.info(f"Approved exercise: {exercise.exercise_type.value}")
-                        if review_result["feedback"]:
-                            feedback.append(review_result["feedback"])
                     else:
-                        rejected_exercises.append({
-                            "exercise": exercise,
-                            "reason": review_result["reason"],
-                            "feedback": review_result["feedback"]
-                        })
+                        exercise_details["reason"] = review_result["reason"]
+                        rejected_exercises.append(exercise_details)
                         logger.info(f"Rejected exercise: {exercise.exercise_type.value}, reason: {review_result['reason']}")
 
             # Update state
@@ -112,6 +114,7 @@ class ExerciseReviewerAgent:
             return {
                 "approved": False,
                 "reason": "low_quality",
+                "quality_score": quality_assessment['quality_score'],
                 "feedback": quality_assessment["feedback"],
                 "details": quality_assessment["details"]
             }
@@ -120,6 +123,7 @@ class ExerciseReviewerAgent:
         return {
             "approved": True,
             "reason": "approved",
+            "quality_score": quality_assessment['quality_score'],
             "feedback": quality_assessment["feedback"],
             "details": quality_assessment["details"]
         }

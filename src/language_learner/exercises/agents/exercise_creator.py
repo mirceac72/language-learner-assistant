@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import TypedDict
 from uuid import uuid4
 
+from src.language_learner.config import get_settings
 from src.language_learner.core.llm_interface import LLMClient
 from src.language_learner.models.exercise import DifficultyLevel, Exercise, ExerciseType
 
@@ -88,8 +89,40 @@ class ExerciseCreatorAgent:
             return self._generate_multiple_choice_exercise(word, iteration)
         elif exercise_type == ExerciseType.TRANSLATION:
             return self._generate_translation_exercise(word, iteration)
-        else:
+        elif exercise_type == ExerciseType.SENTENCE_CONSTRUCTION:
+            logger.warning(f"SENTENCE_CONSTRUCTION exercise type selected but not fully implemented, falling back to FILL_BLANK")
             return self._generate_fill_blank_exercise(word, iteration)
+        elif exercise_type == ExerciseType.WORD_MATCHING:
+            logger.warning(f"WORD_MATCHING exercise type selected but not fully implemented, falling back to FILL_BLANK")
+            return self._generate_fill_blank_exercise(word, iteration)
+        else:
+            logger.warning(f"Unknown exercise type {exercise_type}, falling back to FILL_BLANK")
+            return self._generate_fill_blank_exercise(word, iteration)
+
+    def _get_allowed_exercise_types(self) -> list[ExerciseType]:
+        """Get the list of allowed exercise types from configuration.
+
+        Returns:
+            List of allowed ExerciseType enums
+        """
+        settings = get_settings()
+        allowed_types_str = settings.exercise_types
+        
+        # Parse comma-separated string and convert to ExerciseType enums
+        allowed_types = []
+        for type_str in allowed_types_str.split(","):
+            type_str = type_str.strip()
+            try:
+                allowed_types.append(ExerciseType(type_str))
+            except ValueError:
+                logger.warning(f"Unknown exercise type '{type_str}' in EXERCISE_TYPES config, skipping")
+        
+        # If no valid types found, return all available types
+        if not allowed_types:
+            logger.warning("No valid exercise types found in EXERCISE_TYPES config, using all types")
+            return list(ExerciseType)
+        
+        return allowed_types
 
     def _choose_exercise_type(self, iteration: int = 1) -> ExerciseType:
         """Choose an exercise type, with variety based on iteration.
@@ -98,24 +131,10 @@ class ExerciseCreatorAgent:
             iteration: Current iteration number
 
         Returns:
-            Randomly selected exercise type
+            Randomly selected exercise type from allowed types
         """
-        # Vary exercise types more in later iterations
-        if iteration > 1:
-            types = [
-                ExerciseType.FILL_BLANK,
-                ExerciseType.MULTIPLE_CHOICE,
-                ExerciseType.TRANSLATION,
-                ExerciseType.SENTENCE_CONSTRUCTION,
-            ]
-        else:
-            types = [
-                ExerciseType.FILL_BLANK,
-                ExerciseType.MULTIPLE_CHOICE,
-                ExerciseType.TRANSLATION,
-            ]
-
-        return random.choice(types)
+        allowed_types = self._get_allowed_exercise_types()
+        return random.choice(allowed_types)
 
     def _generate_fill_blank_exercise(self, word: str, iteration: int = 1) -> Exercise | None:
         """Generate fill-in-the-blank exercise.

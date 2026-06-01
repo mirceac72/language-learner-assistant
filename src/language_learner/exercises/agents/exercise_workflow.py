@@ -122,7 +122,7 @@ class ExerciseWorkflow:
 
         logger.info(f"Workflow completed: {len(state['reviewed_exercises'])} final exercises approved")
 
-        return state["reviewed_exercises"]
+        return [x["exercise"] for x in state["reviewed_exercises"]]
 
     def run_simple_workflow(self, vocabulary_words: list[str]) -> list[Exercise]:
         """Run a simplified single-iteration workflow.

@@ -34,6 +34,10 @@ class AppSettings(BaseSettings):
     min_word_length: int = Field(4, env="MIN_WORD_LENGTH")
     top_vocabulary_words: int = Field(50, env="TOP_VOCABULARY_WORDS")
     exercises_per_session: int = Field(10, env="EXERCISES_PER_SESSION")
+    exercise_types: str = Field(
+        "fill_blank,multiple_choice,translation,sentence_construction,word_matching",
+        env="EXERCISE_TYPES",
+    )
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

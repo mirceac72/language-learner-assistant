@@ -1,13 +1,15 @@
 # Test the Exercise Creator Agent
 
 import pytest
+from unittest.mock import patch
 
+from src.language_learner.config import AppSettings
 from src.language_learner.core.mock_llm import MockLLMClient
 from src.language_learner.exercises.agents.exercise_creator import (
     ExerciseCreatorAgent,
     ExerciseCreatorState,
 )
-from src.language_learner.models.exercise import Exercise
+from src.language_learner.models.exercise import Exercise, ExerciseType
 
 
 def test_creator_generates_exercises_for_all_words():
@@ -87,32 +89,53 @@ def test_creator_state_structure():
 
 
 def test_creator_exercise_variety():
-    """Test that creator generates different exercise types"""
+    """Test that creator generates exercises of each configured type"""
     llm_client = MockLLMClient()
     creator_agent = ExerciseCreatorAgent(llm_client)
     creator_node = creator_agent.create_node()
 
-    # Use multiple words to test variety (mock LLM returns different types for different words)
-    test_words = ["pomme", "chat"]  # pomme -> fill_blank, chat -> translation/multiple_choice
-    initial_state: ExerciseCreatorState = {
-        "vocabulary_words": test_words,
-        "generated_exercises": [],
-        "iteration": 1,
-    }
+    # Configure allowed exercise types to a specific set
+    configured_types = [ExerciseType.FILL_BLANK, ExerciseType.MULTIPLE_CHOICE, ExerciseType.TRANSLATION]
+    
+    # Mock get_settings to return our configured types
+    mock_settings = AppSettings()
+    mock_settings.exercise_types = "fill_blank,multiple_choice,translation"
+    
+    # Mock random.choice to cycle through configured types deterministically
+    # This ensures we get all types without relying on randomness
+    type_index = [0]
+    def mock_random_choice(choices):
+        idx = type_index[0] % len(choices)
+        type_index[0] += 1
+        return choices[idx]
+    
+    with patch('src.language_learner.exercises.agents.exercise_creator.get_settings', return_value=mock_settings), \
+         patch('random.choice', side_effect=mock_random_choice):
+        # Generate exercises with enough count to cover all configured types
+        # With 3 words and 2 exercises per word in iteration 1 = 6 exercises
+        test_words = ["pomme", "chat", "maison"]
+        initial_state: ExerciseCreatorState = {
+            "vocabulary_words": test_words,
+            "generated_exercises": [],
+            "iteration": 1,
+        }
 
-    result_state = creator_node(initial_state)
-    generated_exercises = result_state["generated_exercises"]
+        result_state = creator_node(initial_state)
+        generated_exercises = result_state["generated_exercises"]
 
-    # Should generate multiple exercises
-    assert len(generated_exercises) >= 4, "Should generate at least 2 exercises per word in iteration 1"
+        # Should generate multiple exercises
+        assert len(generated_exercises) >= 6, f"Should generate at least 2 exercises per word, got {len(generated_exercises)}"
 
-    # Check for variety in exercise types
-    exercise_types = set()
-    for exercise in generated_exercises:
-        exercise_types.add(exercise.exercise_type)
-
-    # Should have at least 2 different exercise types (mock LLM generates different types)
-    assert len(exercise_types) >= 2, f"Should generate variety of exercise types, got: {exercise_types}"
+        # Check that all configured types were generated
+        generated_types = {exercise.exercise_type for exercise in generated_exercises}
+        configured_type_set = set(configured_types)
+        
+        assert configured_type_set.issubset(generated_types), \
+            f"Expected all configured types {configured_type_set} to be generated, but got {generated_types}"
+        
+        # Verify no extra types were generated beyond configured ones
+        assert generated_types.issubset(configured_type_set), \
+            f"Generated types {generated_types} should only include configured types {configured_type_set}"
 
 
 def test_creator_second_iteration():
