@@ -223,22 +223,27 @@ Iteration {iteration}: Focus on creating {'more challenging' if iteration > 1 el
         Returns:
             Generated exercise or None if generation failed
         """
-        prompt = f"""Create a French to English translation exercise for the word "{word}".
-Provide ONLY the French sentence containing the word and its English translation.
-Use EXACTLY this format: french_sentence|english_translation
-Example: J'aime les pommes.|I like apples.
+        # First LLM call: Create a French sentence using the word
+        sentence_prompt = f"""Create a natural French sentence that uses the word "{word}".
+Provide ONLY the French sentence.
 
 Iteration {iteration}: Focus on creating {'more complex' if iteration > 1 else 'natural'} sentences."""
 
         try:
-            response = self.llm.generate(prompt, temperature=0.7, max_tokens=80)
-            parts = response.split("|")
-            if len(parts) >= 2:
+            french_sentence = self.llm.generate(sentence_prompt, temperature=0.7, max_tokens=80).strip()
+
+            # Second LLM call: Translate the French sentence to English
+            translation_prompt = f"""Translate the following French sentence to English: {french_sentence}
+Provide ONLY the English translation."""
+
+            english_translation = self.llm.generate(translation_prompt, temperature=0.3, max_tokens=80).strip()
+
+            if french_sentence and english_translation:
                 return Exercise(
                     exercise_id=str(uuid4()),
                     exercise_type=ExerciseType.TRANSLATION,
-                    question=f"Translate to English: {parts[0].strip()}",
-                    correct_answer=parts[1].strip(),
+                    question=french_sentence,
+                    correct_answer=english_translation,
                     context=f"Focus on translating the word '{word}' correctly",
                     difficulty=DifficultyLevel.MEDIUM,
                 )

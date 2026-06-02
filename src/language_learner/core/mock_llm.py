@@ -21,11 +21,21 @@ class MockLLMClient(LLMClient):
             # Mock quality assessment response
             return "85|Good exercise with clear question and appropriate challenge|Could add more context about word usage"
 
+        # Check for translation accuracy review
+        if "Verify if the following English text is an accurate translation" in prompt:
+            return "100|Perfect translation"
+
         # Simple mock responses based on prompt content
         elif "fill-in-the-blank" in prompt:
             return "Le chat est sur le ___.|canapé|The cat is on the sofa."
         elif "multiple choice" in prompt:
             return "What does 'pomme' mean?|apple|fruit|red|tree"
+        elif "Create a natural French sentence" in prompt or "Create a French sentence" in prompt:
+            # First LLM call for translation exercise - return French sentence
+            return "J'aime les pommes."
+        elif "Translate the following French sentence" in prompt:
+            # Second LLM call for translation exercise - return English translation
+            return "I like apples."
         elif "translation" in prompt:
             return "J'aime les pommes.|I like apples."
 
