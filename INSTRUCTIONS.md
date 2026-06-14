@@ -24,9 +24,24 @@
 ## Development
 
 ### Running Tests
+
+**Unit tests (no API required):**
+
+Integration tests (require Mistral API key with billing enabled)
 ```bash
+# Run only integration tests
+uv run -m pytest tests/integration/ -v -m integration
+
+# Run all tests except integration tests
+uv run -m pytest tests/ -v -m "not integration"
+
+# Run all tests (unit + integration)
 uv run -m pytest tests/ -v
 ```
+
+**Note:** Integration tests require:
+- A valid `MISTRAL_API_KEY` in your `.env` file or environment
+- Network connectivity to Mistral API
 
 ### Running Ruff (Linter)
 ```bash
@@ -73,7 +88,9 @@ For Step 1 of the Implementation Plan (Establish Quality Baseline):
 The application uses the following environment variables:
 
 - `MISTRAL_API_KEY` - Required for Mistral LLM access
-- `MISTRAL_MODEL` - Optional, defaults to "mistral-small"
+- `MISTRAL_MODEL` - Optional, defaults to "mistral-small" (configure in `.env` file)
+- `LLM_TIMEOUT` - LLM request timeout in seconds (default: 30)
+- `LLM_MAX_RETRIES` - Maximum number of retries for LLM requests (default: 3)
 
 ## Security
 

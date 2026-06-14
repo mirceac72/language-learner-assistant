@@ -18,8 +18,10 @@ class AppSettings(BaseSettings):
 
     # LLM Configuration
     mistral_api_key: str | None = Field(None, env="MISTRAL_API_KEY")
+    mistral_model: str = Field("mistral-small", env="MISTRAL_MODEL")
     llm_timeout: int = Field(30, env="LLM_TIMEOUT")
     llm_max_retries: int = Field(3, env="LLM_MAX_RETRIES")
+    llm_rate_limit: float = Field(0.8, env="LLM_RATE_LIMIT")
 
     # Web scraping configuration
     web_request_timeout: int = Field(10, env="WEB_REQUEST_TIMEOUT")

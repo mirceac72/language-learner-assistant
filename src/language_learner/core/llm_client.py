@@ -1,6 +1,8 @@
 # Mistral LLM Client using official mistralai library
 import os
+from typing import Optional
 
+from pyrate_limiter import Limiter, Rate, Duration
 from mistralai.client import Mistral
 from mistralai.client.models.usermessage import UserMessage
 
@@ -12,19 +14,34 @@ class MistralLLMClient(LLMClient):
     """Mistral LLM client implementing generic LLM interface"""
 
     def __init__(
-        self, api_key: str | None = None, model: str = "mistral-small"
+        self,
+        api_key: str | None = None,
+        model: str | None = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """Initialize Mistral LLM client.
 
         Args:
             api_key: Mistral API key, defaults to MISTRAL_API_KEY environment variable
             model: Model name to use
+            rate_limit: Maximum API calls per second
 
         Raises:
             ValueError: If API key is not provided
         """
         self.api_key = api_key or os.getenv("MISTRAL_API_KEY")
         self.model = model
+        self.rate_limit = rate_limit
+        
+        # Initialize rate limiter using pyrate_limiter
+        if self.rate_limit > 0:
+            # Convert rate_limit (calls/second) to duration per call
+            # For fractional rates like 0.8, we use Rate with fractional duration
+            # e.g., 0.8 calls/sec = 1 call per 1.25 seconds
+            seconds_per_call = 1.0 / self.rate_limit
+            self.limiter = Limiter(Rate(1, Duration.SECOND * seconds_per_call))
+        else:
+            self.limiter = None
 
         if not self.api_key:
             raise ValueError("Mistral API key not provided")
@@ -48,6 +65,10 @@ class MistralLLMClient(LLMClient):
             LLMError: If there's an error generating text
         """
         try:
+            # Apply rate limiting using pyrate_limiter
+            if self.limiter:
+                self.limiter.try_acquire()
+            
             chat_response = self.client.chat.complete(
                 model=self.model,
                 messages=[UserMessage(content=prompt)],

@@ -20,6 +20,7 @@ except LookupError:
     nltk.download("stopwords")
 
 
+from src.language_learner.config import get_settings
 from src.language_learner.core.application import LanguageLearnerApplication
 from src.language_learner.core.llm_client import MistralLLMClient
 from src.language_learner.core.mock_llm import MockLLMClient
@@ -39,7 +40,12 @@ def main():
     if "app" not in st.session_state:
         try:
             # Try to use real Mistral LLM client
-            llm_client = MistralLLMClient()
+            # Access settings before creating MistralLLMClient
+            settings = get_settings()
+            llm_client = MistralLLMClient(
+                model=settings.mistral_model,
+                rate_limit=settings.llm_rate_limit,
+            )
             st.session_state.app = LanguageLearnerApplication(llm_client)
             st.session_state.llm_configured = True
         except ValueError as e:
