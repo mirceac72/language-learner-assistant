@@ -1,9 +1,9 @@
 # Exercise Generator using LLM
 from uuid import uuid4
 
-from src.language_learner.core.llm_interface import LLMClient
-from src.language_learner.exceptions import ExerciseGenerationError
-from src.language_learner.models.exercise import DifficultyLevel, Exercise, ExerciseType
+from language_learner.core.llm_interface import LLMClient
+from language_learner.exercises.agents.exercise_workflow import ExerciseWorkflow
+from language_learner.models.exercise import Exercise
 
 
 class ExerciseGenerator:
@@ -16,9 +16,6 @@ class ExerciseGenerator:
             llm_client: LLM client for generating exercises
         """
         self.llm = llm_client
-        from src.language_learner.exercises.agents.exercise_workflow import (
-            ExerciseWorkflow,
-        )
         self.workflow = ExerciseWorkflow(llm_client)
 
     def generate_exercises(

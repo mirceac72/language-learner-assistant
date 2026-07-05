@@ -10,6 +10,8 @@ import spacy
 
 from ..logging import get_logger
 
+_SPACY_MODEL_CACHE: dict[str, spacy.Language] = {}
+
 
 class NERFilter:
     """Named Entity Recognition Filter using spaCy"""
@@ -49,12 +51,14 @@ class NERFilter:
 
         model_name = model_map.get(self.language, 'fr_core_news_sm')
 
-        try:
-            return spacy.load(model_name)
-        except OSError as e:
-            raise RuntimeError(
-                f"Required spaCy model '{model_name}' is not installed. "
-            ) from e
+        if model_name not in _SPACY_MODEL_CACHE:
+            try:
+                _SPACY_MODEL_CACHE[model_name] = spacy.load(model_name)
+            except OSError as e:
+                raise RuntimeError(
+                    f"Required spaCy model '{model_name}' is not installed. "
+                ) from e
+        return _SPACY_MODEL_CACHE[model_name]
 
     def get_named_entities(self, text: str) -> set[str]:
         """Extract named entities from text using NER filter

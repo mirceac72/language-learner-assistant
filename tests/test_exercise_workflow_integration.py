@@ -1,7 +1,7 @@
 # Test the implementation using pytest
-from src.language_learner.core.application import LanguageLearnerApplication
-from src.language_learner.core.mock_llm import MockLLMClient
-from src.language_learner.models.exercise import Exercise, ExerciseType
+from language_learner.core.application import LanguageLearnerApplication
+from language_learner.core.mock_llm import MockLLMClient
+from language_learner.models.exercise import Exercise, ExerciseType
 
 
 def test_exercise_generation():
@@ -156,8 +156,6 @@ def test_feedback_flow():
         "is_correct": evaluation.is_correct,
         "feedback": evaluation.feedback,
         "correct_answer": evaluation.correct_answer,
-        "explanation": evaluation.explanation,
-        "learning_tips": evaluation.learning_tips,
     }
 
     # Verify feedback is available

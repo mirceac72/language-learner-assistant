@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from src.language_learner.models.exercise import Exercise, ExerciseSession
+from language_learner.models.exercise import Exercise, ExerciseSession
 
 
 class ExercisePlayer:

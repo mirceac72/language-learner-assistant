@@ -5,9 +5,9 @@ from collections.abc import Callable
 from typing import TypedDict
 from uuid import uuid4
 
-from src.language_learner.config import get_settings
-from src.language_learner.core.llm_interface import LLMClient
-from src.language_learner.models.exercise import DifficultyLevel, Exercise, ExerciseType
+from language_learner.config import get_settings
+from language_learner.core.llm_interface import LLMClient
+from language_learner.models.exercise import DifficultyLevel, Exercise, ExerciseType
 
 # Configure logging
 logger = logging.getLogger(__name__)

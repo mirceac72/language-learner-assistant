@@ -31,12 +31,6 @@ class EvaluationResult:
     is_correct: bool
     feedback: str
     correct_answer: str
-    explanation: str
-    learning_tips: list[str] | None = None
-
-    def __post_init__(self):
-        if self.learning_tips is None:
-            self.learning_tips = []
 
 
 @dataclass

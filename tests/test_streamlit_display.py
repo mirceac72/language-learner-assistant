@@ -1,6 +1,6 @@
 # Test script to verify Streamlit display functionality
-from src.language_learner.core.application import LanguageLearnerApplication
-from src.language_learner.core.mock_llm import MockLLMClient
+from language_learner.core.application import LanguageLearnerApplication
+from language_learner.core.mock_llm import MockLLMClient
 
 
 def test_streamlit_display():

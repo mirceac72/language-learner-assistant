@@ -4,14 +4,14 @@ from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
 
-from src.language_learner.core.llm_interface import LLMClient
-from src.language_learner.exercises.agents.exercise_creator import (
+from language_learner.core.llm_interface import LLMClient
+from language_learner.exercises.agents.exercise_creator import (
     ExerciseCreatorAgent,
 )
-from src.language_learner.exercises.agents.exercise_reviewer import (
+from language_learner.exercises.agents.exercise_reviewer import (
     ExerciseReviewerAgent,
 )
-from src.language_learner.models.exercise import Exercise
+from language_learner.models.exercise import Exercise
 
 # Configure logging
 logger = logging.getLogger(__name__)

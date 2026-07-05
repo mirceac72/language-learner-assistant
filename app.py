@@ -20,16 +20,16 @@ except LookupError:
     nltk.download("stopwords")
 
 
-from src.language_learner.config import get_settings
-from src.language_learner.core.application import LanguageLearnerApplication
-from src.language_learner.core.llm_client import MistralLLMClient
-from src.language_learner.core.mock_llm import MockLLMClient
-from src.language_learner.ui.exercise_display import (
+from language_learner.config import get_settings
+from language_learner.core.application import LanguageLearnerApplication
+from language_learner.core.llm_client import MistralLLMClient
+from language_learner.core.mock_llm import MockLLMClient
+from language_learner.ui.exercise_display import (
     display_exercise,
     display_exercise_completion,
 )
-from src.language_learner.ui.vocabulary_display import display_vocabulary
-from src.language_learner.web.vocabulary_extractor import VocabularyExtractor
+from language_learner.ui.vocabulary_display import display_vocabulary
+from language_learner.web.vocabulary_extractor import VocabularyExtractor
 
 
 def main():

@@ -3,13 +3,13 @@
 import pytest
 from unittest.mock import patch
 
-from src.language_learner.config import AppSettings
-from src.language_learner.core.mock_llm import MockLLMClient
-from src.language_learner.exercises.agents.exercise_creator import (
+from language_learner.config import AppSettings
+from language_learner.core.mock_llm import MockLLMClient
+from language_learner.exercises.agents.exercise_creator import (
     ExerciseCreatorAgent,
     ExerciseCreatorState,
 )
-from src.language_learner.models.exercise import Exercise, ExerciseType
+from language_learner.models.exercise import Exercise, ExerciseType
 
 
 def test_creator_generates_exercises_for_all_words():
@@ -109,7 +109,7 @@ def test_creator_exercise_variety():
         type_index[0] += 1
         return choices[idx]
     
-    with patch('src.language_learner.exercises.agents.exercise_creator.get_settings', return_value=mock_settings), \
+    with patch('language_learner.exercises.agents.exercise_creator.get_settings', return_value=mock_settings), \
          patch('random.choice', side_effect=mock_random_choice):
         # Generate exercises with enough count to cover all configured types
         # With 3 words and 2 exercises per word in iteration 1 = 6 exercises

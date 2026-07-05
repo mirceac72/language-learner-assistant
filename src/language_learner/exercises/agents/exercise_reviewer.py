@@ -3,8 +3,8 @@ import logging
 from collections.abc import Callable
 from typing import Any, TypedDict
 
-from src.language_learner.core.llm_interface import LLMClient
-from src.language_learner.models.exercise import Exercise, ExerciseType
+from language_learner.core.llm_interface import LLMClient
+from language_learner.models.exercise import Exercise, ExerciseType
 
 # Configure logging
 logger = logging.getLogger(__name__)

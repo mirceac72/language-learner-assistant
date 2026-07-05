@@ -46,8 +46,6 @@ def display_exercise(
                     "is_correct": evaluation.is_correct,
                     "feedback": evaluation.feedback,
                     "correct_answer": evaluation.correct_answer,
-                    "explanation": evaluation.explanation,
-                    "learning_tips": evaluation.learning_tips,
                 }
                 return True
 
@@ -66,8 +64,6 @@ def display_exercise(
                         "is_correct": evaluation.is_correct,
                         "feedback": evaluation.feedback,
                         "correct_answer": evaluation.correct_answer,
-                        "explanation": evaluation.explanation,
-                        "learning_tips": evaluation.learning_tips,
                     }
                     return True
 
@@ -85,8 +81,6 @@ def display_exercise(
                     "is_correct": evaluation.is_correct,
                     "feedback": evaluation.feedback,
                     "correct_answer": evaluation.correct_answer,
-                    "explanation": evaluation.explanation,
-                    "learning_tips": evaluation.learning_tips,
                 }
                 return True
     else:
@@ -117,7 +111,6 @@ def display_exercise_feedback(exercise: Exercise) -> None:
 
         if not evaluation["is_correct"]:
             st.write(f"**Correct Answer:** {evaluation['correct_answer']}")
-            st.write(f"**Explanation:** {evaluation['explanation']}")
 
 
 def display_exercise_completion() -> None:

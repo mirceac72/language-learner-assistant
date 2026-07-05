@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.language_learner.web.ner_filter import NERFilter
+from language_learner.web.ner_filter import NERFilter
 
 
 class TestNERFilterInitialization:

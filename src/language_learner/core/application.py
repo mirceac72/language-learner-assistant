@@ -1,10 +1,10 @@
 # Main Application Module
 
-from src.language_learner.core.llm_interface import LLMClient
-from src.language_learner.evaluation.evaluator import AnswerEvaluator
-from src.language_learner.exercises.generator import ExerciseGenerator
-from src.language_learner.exercises.player import ExercisePlayer
-from src.language_learner.models.exercise import Exercise
+from language_learner.core.llm_interface import LLMClient
+from language_learner.evaluation.evaluator import AnswerEvaluator
+from language_learner.exercises.generator import ExerciseGenerator
+from language_learner.exercises.player import ExercisePlayer
+from language_learner.models.exercise import Exercise
 
 
 class LanguageLearnerApplication:

@@ -1,6 +1,6 @@
 # Test the feedback flow functionality
-from src.language_learner.core.application import LanguageLearnerApplication
-from src.language_learner.core.mock_llm import MockLLMClient
+from language_learner.core.application import LanguageLearnerApplication
+from language_learner.core.mock_llm import MockLLMClient
 
 
 def test_feedback_flow():
@@ -43,8 +43,6 @@ def test_feedback_flow():
             "is_correct": evaluation.is_correct,
             "feedback": evaluation.feedback,
             "correct_answer": evaluation.correct_answer,
-            "explanation": evaluation.explanation,
-            "learning_tips": evaluation.learning_tips,
         }
 
         print("\n--- After submission (feedback screen) ---")

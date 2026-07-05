@@ -4,8 +4,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 import requests
 
-from src.language_learner.web.vocabulary_extractor import VocabularyExtractor
-from src.language_learner.exceptions import WebFetchError
+from language_learner.web.vocabulary_extractor import VocabularyExtractor
+from language_learner.exceptions import WebFetchError
 
 
 class TestVocabularyExtractionPipeline:

@@ -1,6 +1,6 @@
 # Mock LLM Client for testing
 
-from src.language_learner.core.llm_interface import LLMClient
+from language_learner.core.llm_interface import LLMClient
 
 
 class MockLLMClient(LLMClient):
@@ -11,7 +11,11 @@ class MockLLMClient(LLMClient):
         self.call_count = 0
 
     def generate(
-        self, prompt: str, temperature: float = 0.7, max_tokens: int = 150
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = 150,
+        response_schema: dict | None = None,
     ) -> str:
         """Generate mock response"""
         self.call_count += 1
@@ -23,7 +27,11 @@ class MockLLMClient(LLMClient):
 
         # Check for translation accuracy review
         if "Verify if the following English text is an accurate translation" in prompt:
-            return "100|Perfect translation"
+            return '{"score": 100, "feedback": "Perfect translation"}'
+
+        # Check for translation exercise evaluation
+        if "Evaluate this translation exercise" in prompt:
+            return '{"score": 85, "feedback": "Good translation, minor differences are acceptable."}'
 
         # Simple mock responses based on prompt content
         elif "fill-in-the-blank" in prompt:

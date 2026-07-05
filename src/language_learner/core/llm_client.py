@@ -1,13 +1,14 @@
 # Mistral LLM Client using official mistralai library
+import json
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from pyrate_limiter import Limiter, Rate, Duration
 from mistralai.client import Mistral
 from mistralai.client.models.usermessage import UserMessage
 
-from src.language_learner.core.llm_interface import LLMClient
-from src.language_learner.exceptions import LLMError
+from language_learner.core.llm_interface import LLMClient
+from language_learner.exceptions import LLMError
 
 
 class MistralLLMClient(LLMClient):
@@ -49,7 +50,11 @@ class MistralLLMClient(LLMClient):
         self.client = Mistral(api_key=self.api_key)
 
     def generate(
-        self, prompt: str, temperature: float = 0.7, max_tokens: int = 150
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = 150,
+        response_schema: dict[str, Any] | None = None,
     ) -> str:
         """Generate text using Mistral LLM.
 
@@ -57,9 +62,11 @@ class MistralLLMClient(LLMClient):
             prompt: Input prompt for text generation
             temperature: Sampling temperature
             max_tokens: Maximum number of tokens to generate
+            response_schema: Optional JSON schema for structured output.
+                           If provided, the Mistral API will return a JSON response.
 
         Returns:
-            Generated text
+            Generated text (JSON string if response_schema was provided)
 
         Raises:
             LLMError: If there's an error generating text
@@ -69,12 +76,29 @@ class MistralLLMClient(LLMClient):
             if self.limiter:
                 self.limiter.try_acquire()
             
-            chat_response = self.client.chat.complete(
-                model=self.model,
-                messages=[UserMessage(content=prompt)],
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            # Build request parameters
+            request_params = {
+                "model": self.model,
+                "messages": [UserMessage(content=prompt)],
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            
+            # If response_schema is provided, use response_format
+            if response_schema is not None:
+                # Mistral structured output expects the schema nested under a
+                # "json_schema" object with a name, not a bare "schema" field.
+                # See https://docs.mistral.ai/capabilities/structured-output/
+                request_params["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": response_schema.get("title", "response"),
+                        "schema": response_schema,
+                        "strict": True,
+                    },
+                }
+            
+            chat_response = self.client.chat.complete(**request_params)
 
             if chat_response.choices and len(chat_response.choices) > 0:
                 return chat_response.choices[0].message.content.strip()

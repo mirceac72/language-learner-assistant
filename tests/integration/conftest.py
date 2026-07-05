@@ -25,8 +25,8 @@ def mistral_api_key():
 @pytest.fixture
 def real_llm_client(mistral_api_key):
     """Create a real MistralLLMClient for integration tests."""
-    from src.language_learner.config import get_settings
-    from src.language_learner.core.llm_client import MistralLLMClient
+    from language_learner.config import get_settings
+    from language_learner.core.llm_client import MistralLLMClient
 
     # Get settings for model and rate_limit
     settings = get_settings()
