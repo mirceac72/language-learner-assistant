@@ -542,12 +542,6 @@ if st.button("Submit Answer"):
 - **Risk Level**: Low (Streamlit handles most complexity)
 - **Dependencies**: Medium (streamlit, internal modules)
 
-### Effort Estimate
-- Specification creation: 1-2 hours
-- Code review against spec: 1 hour
-- Test case definition: 1 hour
-- **Total**: 3-4 hours
-
 ---
 
 ## References

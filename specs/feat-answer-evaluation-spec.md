@@ -441,13 +441,6 @@ Format: score|is_correct|feedback|explanation|learning_tip_1;learning_tip_2
 - **Risk Level**: Low (simple mode is straightforward; LLM enhancement is additive)
 - **Dependencies**: Medium (minimal external dependencies for v1)
 
-### Effort Estimate
-- Specification creation: 2-3 hours
-- LLM enhancement design: 1-2 hours
-- Code review against spec: 1 hour
-- Test case definition: 1 hour
-- **Total**: 5-7 hours
-
 ---
 
 ## References

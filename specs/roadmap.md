@@ -50,8 +50,6 @@ This document outlines the development priorities, milestones, and success metri
    
    **Steps**: Analyze code → Create draft specs → Link specs → Review → Finalize
    
-   **Estimated Effort**: 8-12 hours total
-   
 2. **Formalize quality standards**
    - Exercise review criteria and scoring thresholds
    - Code review checklists

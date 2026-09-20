@@ -579,13 +579,6 @@ Create test fixtures for:
 - **Risk Level**: Medium (LLM integration, content safety)
 - **Dependencies**: Medium (LLM, spaCy, configuration)
 
-### Effort Estimate
-- Design & Specification: 2-4 hours
-- Core implementation: 8-12 hours
-- Testing: 6-8 hours
-- Documentation: 2-4 hours
-- **Total**: 18-28 hours
-
 ---
 
 ## Regex Patterns

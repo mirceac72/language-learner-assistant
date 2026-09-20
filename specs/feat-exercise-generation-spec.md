@@ -378,7 +378,7 @@ graph LR
 
 ---
 
-### **Stage 1: Foundation & Measurement** ⏱️ **1-2 days**
+### **Stage 1: Foundation & Measurement**
 **Goal**: Establish quality baseline and create measurement infrastructure
 
 **Focus**: Measurement, not improvement
@@ -415,7 +415,7 @@ graph LR
 
 ---
 
-### **Stage 2: CEFR Migration** ⏱️ **1 day**
+### **Stage 2: CEFR Migration**
 **Goal**: Align difficulty levels with CEFR standards (A1-C2)
 
 **Focus**: Standards compliance
@@ -462,7 +462,7 @@ graph LR
 
 ---
 
-### **Stage 3: External Prompts Infrastructure** ⏱️ **2-3 days**
+### **Stage 3: External Prompts Infrastructure**
 **Goal**: Decouple prompts from code for maintainability, testing, and configuration
 
 **Focus**: Maintainability and configurability
@@ -524,7 +524,7 @@ graph LR
 
 ---
 
-### **Stage 4: Remove Direct Generation Path** ⏱️ **1-2 days**
+### **Stage 4: Remove Direct Generation Path**
 **Goal**: Force all exercises through quality review workflow - no bypass possible
 
 **Focus**: Quality enforcement
@@ -568,7 +568,7 @@ graph LR
 
 ---
 
-### **Stage 5: Quality Assessment Enhancement** ⏱️ **2-3 days**
+### **Stage 5: Quality Assessment Enhancement**
 **Goal**: Increase approval rate to >80% and average score to >75 with real LLM testing
 
 **Focus**: Quality improvement through better assessment
@@ -626,7 +626,7 @@ graph LR
 
 ---
 
-### **Stage 6: Iteration Logic Enhancement** ⏱️ **1 day**
+### **Stage 6: Iteration Logic Enhancement**
 **Goal**: Better use feedback between iterations to improve exercise quality
 
 **Focus**: Iterative quality improvement
@@ -670,7 +670,7 @@ graph LR
 
 ---
 
-### **Stage 7: Comprehensive Validation** ⏱️ **2 days**
+### **Stage 7: Comprehensive Validation**
 **Goal**: Full validation that all quality targets are met across all scenarios
 
 **Focus**: Verification and validation
@@ -726,7 +726,7 @@ graph LR
 
 ---
 
-### **Stage 8: Specification Finalization** ⏱️ **1-2 days**
+### **Stage 8: Specification Finalization**
 **Goal**: Complete, validate, and approve the specification document
 
 **Focus**: Documentation and approval
@@ -739,8 +739,6 @@ graph LR
 - [ ] Review and refine all acceptance criteria
 - [ ] Ensure all dependencies are documented and accurate
 - [ ] Update all diagrams if needed (architecture, data flow)
-- [ ] Update estimation section with actual effort
-- [ ] Update changelog with implementation history
 - [ ] Present specification and quality reports to team for review
 - [ ] Incorporate feedback from peer review
 - [ ] Address all open questions from specification
@@ -1015,40 +1013,6 @@ graph LR
 - **Technical Complexity**: High (LangGraph orchestration, multi-agent coordination, state management)
 - **Risk Level**: Medium (LLM dependency, state complexity, prompt parsing)
 - **Dependencies**: High (langgraph, mistralai, multiple internal components)
-
-### Stage-by-Stage Effort Estimate
-
-| Stage | Focus | Duration | Key Deliverable | Review Checkpoint |
-|-------|-------|----------|-----------------|------------------|
-| 1 | Foundation & Measurement | 1-2 days | Baseline quality report | Verify baseline accuracy |
-| 2 | CEFR Migration | 1 day | CEFR-aligned system | Verify migration complete |
-| 3 | External Prompts Infrastructure | 2-3 days | PromptLoader + templates | Verify all prompts externalized |
-| 4 | Remove Direct Generation Path | 1-2 days | Agent-only workflow | Verify no bypass possible |
-| 5 | Quality Assessment Enhancement | 2-3 days | Calibrated assessment | Verify >80% approval rate |
-| 6 | Iteration Logic Enhancement | 1 day | Feedback propagation | Verify iteration improvement |
-| 7 | Comprehensive Validation | 2 days | Validation report | Verify all targets met |
-| 8 | Specification Finalization | 1-2 days | Approved spec | Final approval |
-| **Total** | | **11-15 days** | Complete implementation | All stages approved |
-
-### Parallelization Opportunities
-- **Stages 2 and 3 can run in parallel** after Stage 1 completes (saves 1-2 days)
-- **Testing can overlap** with implementation of later stages
-- **Documentation can be written** incrementally per stage
-
-### Quick Win Option: Minimal Viable Quality (MVQ)
-Implement **Stages 1-4 only (5-8 days)** for significant improvement:
-- ✅ Maintainable prompt system
-- ✅ CEFR compliance
-- ✅ Guaranteed quality filtering
-- ✅ ~60-70% approval rate
-
-Then add **Stages 5-8 (6-8 days)** for final quality push to >80%.
-
-### Resource Requirements
-- **Developer**: 1 full-time (or 2 part-time)
-- **LLM API Access**: Required for real validation (Stages 1, 5, 7)
-- **Test Infrastructure**: Mock LLM for unit tests, real LLM for validation
-- **Storage**: Minimal (prompt files, test data, documentation)
 
 ---
 
