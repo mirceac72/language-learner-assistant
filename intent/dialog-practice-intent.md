@@ -27,8 +27,9 @@ What the learner cannot do today:
 
 A new type of practice, **dialog practice**, alongside the existing exercises.
 
-- The learner and the system hold a **short, open-form dialog in French** about the topic of
-  the page. The learner types free text; the system replies in free text.
+- The learner and the system hold a **short, open-form dialog in French** in a fictional
+  everyday situation invented so that the words from the page come up naturally. The page
+  itself is not retold. The learner types free text; the system replies in free text.
 - The dialog is built around the **vocabulary extracted from the page**. The system steers
   the conversation so that the target words come up naturally and invites the learner to
   use them (asks questions that call for them, offers them when the learner is stuck).
@@ -108,6 +109,11 @@ The learner has used *chaleur* and *prévenir*, been corrected once, and been le
   LLM provider and, preferably, no new dependencies.
 - Streamlit stays the UI. Streamlit has a native chat widget, which should be enough.
 - Runs locally, text only, French only, no user accounts (mission document scope).
+- Dialog practice uses only the extracted words. No page text is sent to the LLM for it
+  or stored.
+- Publishers can reserve text and data mining rights in machine-readable form (robots.txt,
+  the TDM Reservation Protocol, `noai`). A page that does so is refused and nothing from
+  it is processed.
 - Every system message must stay within A2-B1: short sentences, common vocabulary,
   present/passé composé/futur proche as the default tenses. The target words from the
   page are the exception and may be harder.
@@ -145,6 +151,12 @@ The spec must follow these.
    correctly, and the corrections made. How they are displayed is decided in the
    review-phase spec.
 8. **Level: fixed at A2-B1.** No learner-facing level setting for now.
+9. **Dialog topic: fictional, built from the target words, reviewed like a turn.** The
+   model invents an everyday situation at A2-B1 in which the target words fit naturally
+   and the reviewer checks it. The page is not summarised or retold.
+10. **Generic review loop.** The create → review → improve → pick-best loop is built once
+    as a reusable component, because the application will need it for every kind of
+    generated content, not only dialog turns and topics.
 
 ## Open questions
 
