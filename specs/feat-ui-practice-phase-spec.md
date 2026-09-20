@@ -1,8 +1,6 @@
 # UI/UX - Practice Phase Specification
 
 **Status**: Draft
-**Created**: [YYYY-MM-DD]
-**Last Updated**: [YYYY-MM-DD]
 **Priority**: High
 **Complexity**: Medium
 **Phase**: 2 of 3 (Three-phase UI/UX workflow)
@@ -562,11 +560,3 @@ if st.button("Submit Answer"):
 - [UI Creation Phase Spec](../feat-ui-creation-phase-spec.md)
 - [UI Review Phase Spec](../feat-ui-review-phase-spec.md)
 - [Streamlit Documentation](https://docs.streamlit.io/)
-
----
-
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | [Date] | Initial specification created |

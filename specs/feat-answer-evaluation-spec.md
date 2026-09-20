@@ -1,8 +1,6 @@
 # Answer Evaluation Specification
 
 **Status**: Draft
-**Created**: [YYYY-MM-DD]
-**Last Updated**: [YYYY-MM-DD]
 **Priority**: High
 **Complexity**: Medium
 
@@ -460,11 +458,3 @@ Format: score|is_correct|feedback|explanation|learning_tip_1;learning_tip_2
 - [Vocabulary Extraction Pipeline Spec](../feat-vocabulary-extraction-spec.md)
 - [Exercise Generation Spec](../feat-exercise-generation-spec.md)
 - [Mistral AI Documentation](https://docs.mistral.ai/)
-
----
-
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | [Date] | Initial specification created |

@@ -309,11 +309,3 @@ Exercises are evaluated using a 100-point scoring system:
 | Lint check | `uv run ruff check .` | Check code quality |
 | Lint auto-fix | `uv run ruff check --fix .` | Automatically fix lint issues |
 | Format code | `uv run ruff format .` | Format all code |
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | TBD | Initial tech stack document created |

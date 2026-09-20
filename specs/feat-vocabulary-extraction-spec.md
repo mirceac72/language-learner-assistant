@@ -1,8 +1,6 @@
 # Vocabulary Extraction Pipeline Specification
 
 **Status**: Approved
-**Created**: [YYYY-MM-DD]
-**Last Updated**: [YYYY-MM-DD]
 **Priority**: High
 **Complexity**: Medium
 
@@ -378,11 +376,3 @@ The following gaps were identified between the specification requirements and cu
 - [spaCy Documentation](https://spacy.io/usage)
 - [NLTK Documentation](https://www.nltk.org/)
 - [BeautifulSoup Documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
-
----
-
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | [Date] | Initial specification created |

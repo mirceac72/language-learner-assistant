@@ -1,8 +1,6 @@
 # Enhanced Named Entity Recognition and Guardrails Specification
 
 **Status**: Draft
-**Created**: 2026-04-19
-**Last Updated**: 2026-04-19
 **Priority**: High
 **Complexity**: Medium
 
@@ -619,13 +617,3 @@ These patterns are compiled once at module load time for performance.
 - [Original NER Filter Implementation](../src/language_learner/web/ner_filter.py)
 - [Vocabulary Extraction Spec](feat-vocabulary-extraction-spec.md)
 - [Tech Stack Specification](tech-stack.md)
-
----
-
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 0.1 | 2025-01-19 | Initial specification created |
-Initial specification created |
-ification created |

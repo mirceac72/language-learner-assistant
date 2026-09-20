@@ -1,8 +1,6 @@
 # Feature Specification Template
 
 **Status**: Template
-**Created**: [YYYY-MM-DD]
-**Last Updated**: [YYYY-MM-DD]
 **Priority**: [High/Medium/Low]
 **Complexity**: [Low/Medium/High]
 
@@ -284,12 +282,3 @@ Questions that need to be resolved before or during implementation:
 - [Related specification documents](link)
 - [External resources](link)
 - [Similar implementations](link)
-
----
-
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | [Date] | Initial specification created |
-| 1.1 | [Date] | Updated based on feedback |
