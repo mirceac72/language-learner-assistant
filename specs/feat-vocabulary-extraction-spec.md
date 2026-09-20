@@ -27,6 +27,12 @@ Language learners need authentic, contextual vocabulary from real sources. This 
 - [ ] **Frequency Counting**: Count word occurrences and return top N most frequent (configurable, default: 50)
 - [ ] **Language Support**: Support multiple languages, defaulting to French
 - [ ] **Error Handling**: Gracefully handle network errors, invalid URLs, and parsing failures
+- [ ] **Text and Data Mining Opt-Out**: Before any text from a page is processed, honour machine-readable signals by which the publisher reserves text and data mining rights. A page that reserves them is refused with a clear message and nothing from it is extracted or sent to the LLM. Signals honoured, in order of checking:
+  1. `robots.txt` of the origin: the page path is disallowed for `*` (the tool reports a browser user agent, so only the wildcard rules apply to it)
+  2. HTTP response header `tdm-reservation: 1` (TDM Reservation Protocol)
+  3. `<meta name="tdm-reservation" content="1">` in the page head
+  4. `/.well-known/tdmrep.json` of the origin, when a path entry matching the page has `tdm-reservation: 1`
+  5. `noai` in the `X-Robots-Tag` header or in a `<meta name="robots">` tag
 
 ### Non-Functional Requirements
 - [ ] **Performance**: Web page fetch timeout configurable (default: 10 seconds)
@@ -43,6 +49,7 @@ Language learners need authentic, contextual vocabulary from real sources. This 
 - [ ] Must integrate with existing configuration system (`AppSettings`)
 - [ ] Must use existing logging infrastructure
 - [ ] Must raise `WebFetchError` for web retrieval failures
+- [ ] Must raise `ContentReservedError` (a `WebFetchError` subclass) when a page reserves text and data mining rights, so existing handlers still catch it
 
 ---
 
@@ -94,6 +101,8 @@ graph LR
 | `NERFilter` | Named Entity Recognition using spaCy | `spacy` |
 | `AppSettings` | Configuration management | `pydantic_settings` |
 | `WebFetchError` | Custom exception for fetch failures | `LanguageLearnerError` |
+| `TdmOptOutChecker` (`web/tdm_opt_out.py`) | Detects text and data mining reservations: `robots.txt`, `tdm-reservation` header and meta tag, `tdmrep.json`, `noai` | `requests`, `urllib.robotparser`, `BeautifulSoup` |
+| `ContentReservedError` | Raised when a page reserves TDM rights; subclass of `WebFetchError` | `WebFetchError` |
 
 ### Data Flow
 
@@ -113,7 +122,7 @@ graph LR
 
 ```python
 def fetch_web_page(self, url: str) -> str:
-    """Fetch content from a web page.
+    """Fetch content from a web page, honouring text and data mining opt-outs.
     
     Args:
         url: URL to fetch
@@ -122,8 +131,31 @@ def fetch_web_page(self, url: str) -> str:
         HTML content of the web page
         
     Raises:
+        ContentReservedError: If the page or its origin reserves text and data
+            mining rights (robots.txt, tdm-reservation, tdmrep.json, noai)
         WebFetchError: If there's an error fetching the web page
     """
+
+
+# web/tdm_opt_out.py
+@dataclass
+class TdmReservation:
+    source: str      # "robots.txt" | "tdm-reservation-header" | "tdm-reservation-meta" | "tdmrep.json" | "noai"
+    policy_url: str | None = None   # from tdm-policy header or tdmrep.json, if given
+
+
+class TdmOptOutChecker:
+    def __init__(self, user_agent: str, timeout: int) -> None: ...
+
+    def check_before_fetch(self, url: str) -> TdmReservation | None:
+        """robots.txt check. One GET per origin, cached for the process lifetime.
+        A missing or unreachable robots.txt means no reservation."""
+
+    def check_after_fetch(
+        self, url: str, headers: Mapping[str, str], html: str
+    ) -> TdmReservation | None:
+        """Header, meta tag, tdmrep.json and noai checks, in that order. tdmrep.json is
+        fetched once per origin and cached. A missing or malformed file means no reservation."""
 
 def extract_text_from_html(self, html: str) -> str:
     """Extract text content from HTML.
@@ -174,7 +206,8 @@ Environment variables:
 | `DEFAULT_LANGUAGE` | str | No | "french" | Default language for extraction |
 | `MIN_WORD_LENGTH` | int | No | 4 | Minimum word length to include |
 | `TOP_VOCABULARY_WORDS` | int | No | 50 | Number of top words to return |
-| `USER_AGENT` | str | No | Chrome UA | User agent for HTTP requests |
+| `USER_AGENT` | str | No | Chrome UA | User agent for HTTP requests (unchanged) |
+| `RESPECT_TDM_OPT_OUT` | bool | No | true | Refuse pages that reserve text and data mining rights. Set to false only when the publisher has given permission |
 
 ---
 
@@ -204,6 +237,14 @@ Environment variables:
   - [x] Update status from Draft to Review
   - [x] Incorporate feedback
   - [x] Mark as Approved
+
+- [ ] **Step 5**: Text and data mining opt-out (added for dialog practice, applies to all extraction)
+  - [ ] Add `ContentReservedError` to `exceptions.py`
+  - [ ] Add `web/tdm_opt_out.py` with `TdmOptOutChecker` and per-origin caches for `robots.txt` and `tdmrep.json`
+  - [ ] Call `check_before_fetch` before the GET and `check_after_fetch` after it in `fetch_web_page`; raise `ContentReservedError` with the reservation source and policy URL in the message
+  - [ ] Add `RESPECT_TDM_OPT_OUT` to `config.py`
+  - [ ] In `app.py`, show a dedicated message for `ContentReservedError`: the page reserves text and data mining rights and cannot be used
+  - [ ] Unit tests listed under Test Cases; document the behaviour in `README.md` and `INSTRUCTIONS.md`
 
 ### Gaps Identified
 The following gaps were identified between the specification requirements and current implementation:
@@ -246,6 +287,14 @@ The following gaps were identified between the specification requirements and cu
 - [x] Test retry logic on transient failures ( See `tests/test_vocabulary_extractor.py` )
 - [x] Test end-to-end pipeline ( See `tests/test_vocabulary_extraction_integration.py` )
 - [x] Test configuration settings integration ( See `tests/test_vocabulary_extraction_integration.py` )
+- [ ] Test `robots.txt` disallow for `*` raises `ContentReservedError` before the page is fetched; unreachable `robots.txt` does not
+- [ ] Test `tdm-reservation: 1` response header raises `ContentReservedError` with `policy_url` from `tdm-policy`
+- [ ] Test `<meta name="tdm-reservation" content="1">` raises `ContentReservedError`
+- [ ] Test `tdmrep.json` with a matching path and `tdm-reservation: 1` raises; non-matching path or malformed file does not
+- [ ] Test `noai` in `X-Robots-Tag` and in `<meta name="robots">` raises `ContentReservedError`
+- [ ] Test `tdm-reservation: 0` and absent signals allow extraction
+- [ ] Test `RESPECT_TDM_OPT_OUT=false` skips the checks and logs a warning
+- [ ] Test `robots.txt` and `tdmrep.json` are fetched once per origin across repeated calls
 
 ---
 
@@ -269,6 +318,7 @@ The following gaps were identified between the specification requirements and cu
 
 ### Unit Tests
 - [ ] Test `fetch_web_page` with mock HTTP responses
+- [ ] Test `TdmOptOutChecker` with mocked `robots.txt`, headers, meta tags and `tdmrep.json`
 - [ ] Test `extract_text_from_html` with various HTML inputs
 - [ ] Test `extract_vocabulary` with controlled text inputs
 - [ ] Test NER filter with known entity types
@@ -300,6 +350,8 @@ The following gaps were identified between the specification requirements and cu
 | HTML parsing edge cases | Low | Medium | Comprehensive test suite with diverse HTML structures |
 | Performance with large pages | Medium | Medium | Configurable limits, streaming processing for future |
 | Unicode/encoding issues | Low | Medium | Proper encoding handling in HTML parsing |
+| Page processed although the publisher reserved text and data mining rights | Medium | High | Opt-out checks before and after fetch; refusal shown to the learner |
+| Opt-out checks add two requests per origin | High | Low | Per-origin caching of `robots.txt` and `tdmrep.json`; both are small |
 
 ---
 
