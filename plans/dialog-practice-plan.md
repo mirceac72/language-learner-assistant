@@ -25,8 +25,8 @@ persistence of completed dialogs, external prompt files.
 | `src/language_learner/dialogs/__init__.py` | package marker |
 | `src/language_learner/dialogs/dialog_prompts.py` | `LEARNER_LEVEL`, prompt marker constants, four prompt builders, `build_wrap_up` |
 | `src/language_learner/dialogs/agents/__init__.py` | package marker |
-| `src/language_learner/dialogs/agents/dialog_turn_creator.py` | `DialogTurnContext`, `CorrectionOutput`, `DialogTurnOutput`, `DialogTurnCreatorAgent` |
-| `src/language_learner/dialogs/agents/dialog_turn_reviewer.py` | deterministic checks, `DialogTurnReviewerAgent` |
+| `src/language_learner/dialogs/agents/dialog_turn_creator.py` | `DialogTurnContext` (with `carried_corrections`), `CorrectionOutput`, `DialogTurnOutput`, `DialogTurnCreatorAgent`, parse-step filtering |
+| `src/language_learner/dialogs/agents/dialog_turn_reviewer.py` | hard-failure short-circuit (empty or overlong reply), `DialogTurnReviewerAgent` |
 | `src/language_learner/dialogs/agents/dialog_topic_creator.py` | `DialogTopicOutput`, `DialogTopicCreatorAgent` |
 | `src/language_learner/dialogs/agents/dialog_topic_reviewer.py` | `DialogTopicReviewerAgent` |
 | `src/language_learner/dialogs/dialog_player.py` | `DialogPlayer` |
@@ -34,12 +34,12 @@ persistence of completed dialogs, external prompt files.
 | `tests/test_review_loop.py` | TC7, TC8, TC9, approval threshold (default and custom), exception propagation; stub creator/reviewer, no LLM |
 | `tests/test_dialog_models.py` | TC1 |
 | `tests/test_dialog_prompts.py` | TC2, TC13, TC16 |
-| `tests/test_dialog_turn_creator.py` | TC3, JSON parsing, improve-on-feedback prompt content |
-| `tests/test_dialog_turn_reviewer.py` | TC4, TC5, TC6, hard-failure short-circuit |
+| `tests/test_dialog_turn_creator.py` | TC3, JSON parsing, improve-on-feedback prompt content, TC4, TC5, TC6, TC20 (parse-step filtering: word normalisation and membership, correction rules) |
+| `tests/test_dialog_turn_reviewer.py` | hard-failure short-circuit (empty or overlong reply, no LLM call) |
 | `tests/test_dialog_topic_agents.py` | topic creator and reviewer with mock, TC15, TC17 |
 | `tests/test_dialog_player.py` | TC10, TC11, TC12, TC19, full mock dialog (AC1), end by turn count, end by words used, end on reviewer exhaustion |
 | `tests/test_dialog_display.py` | full dialog content check in the style of `test_streamlit_display.py` |
-| `tests/integration/test_dialog_practice_integration.py` | TC14 (AC3, AC4, AC5), TC18; marked `integration` |
+| `tests/integration/test_dialog_practice_integration.py` | TC14 (AC3, AC4, AC5, AC14), TC18; marked `integration` |
 
 ### Modified
 
@@ -72,14 +72,18 @@ green, then one commit with a single-line Conventional Commits message.
    Commit: `feat: add dialog session models and dialog practice settings`
 
 3. **Prompts and mock markers.** `dialogs/dialog_prompts.py` with marker constants that both
-   the builders and `MockLLMClient` import, so they cannot drift. Extend `mock_llm.py` to
-   answer all four prompts with valid JSON. `tests/test_dialog_prompts.py`.
+   the builders and `MockLLMClient` import, so they cannot drift. The creator prompt states
+   that target words are returned exactly as listed; the closing prompt carries the discarded
+   reply's correction. Extend `mock_llm.py` to answer all four prompts with valid JSON.
+   `tests/test_dialog_prompts.py`.
    Commit: `feat: add dialog prompt builders and mock LLM responses for dialog practice`
 
 4. **Turn agents.** `dialog_turn_creator.py`, `dialog_turn_reviewer.py`, their tests. The
-   reviewer runs the deterministic checks first and skips the LLM on an empty or overlong
-   reply. First point where a real Mistral call is worth one manual run, to confirm the
-   nested `CorrectionOutput` list survives strict `json_schema` mode (see Risks).
+   creator filters the parsed output (word normalisation and membership, correction rules);
+   the reviewer only short-circuits on an empty or overlong reply before the LLM call and
+   does not score `target_words_used`. First point where a real Mistral call is worth one
+   manual run, to confirm the nested `CorrectionOutput` list survives strict `json_schema`
+   mode (see Risks).
    Commit: `feat: add dialog turn creator and reviewer agents with structured output`
 
 5. **Topic agents.** `dialog_topic_creator.py`, `dialog_topic_reviewer.py`,
@@ -87,7 +91,11 @@ green, then one commit with a single-line Conventional Commits message.
    Commit: `feat: add fictional dialog topic creator and reviewer agents`
 
 6. **Player and application.** `dialogs/dialog_player.py`, `application.py` changes,
-   `tests/test_dialog_player.py` including the full mock dialog (AC1).
+   `tests/test_dialog_player.py` including the full mock dialog (AC1). The last learner
+   turn runs with `is_closing=True` directly; when the words run out earlier, the reply
+   text is discarded, its corrections are carried into a closing loop run, and the closing
+   turn is skipped when that loop fails. `start_dialog_session(vocabulary_words,
+   practised_words)` selects the unpractised target words.
    Commit: `feat: add dialog player and wire dialog sessions into the application`
 
 7. **UI.** `ui/dialog_display.py`, `app.py` wiring, `tests/test_dialog_display.py`. Manual

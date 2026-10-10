@@ -1,6 +1,6 @@
 # Dialog Practice Specification
 
-**Status**: Approved
+**Status**: Review
 **Priority**: High
 **Complexity**: High
 **Intent**: `../intent/dialog-practice-intent.md`
@@ -26,7 +26,7 @@ These are fixed and are not re-opened here:
 | 4 | 3 to 5 target words per dialog, from the top of the extracted list |
 | 5 | Off-topic, English or one-word learner messages are accepted, answered briefly, and steered back to a target word |
 | 6 | Every dialog turn goes through the creator/reviewer workflow before display |
-| 7 | Per dialog, record the target words used correctly and the corrections made |
+| 7 | Per dialog, record the target words used and the corrections made |
 | 8 | Level is fixed at A2-B1, not a learner-facing setting |
 | 9 | The dialog topic is fictional, invented by the model from the target words alone so that they come up naturally, and reviewed like a turn. No page text is used for it |
 | 10 | The creator → reviewer → improve loop is implemented once as a generic, reusable component, because the application will need it for every kind of generated content |
@@ -42,20 +42,20 @@ These are fixed and are not re-opened here:
 - [ ] **FR4 System turn**: For each learner message the system produces one reply in French (2 to 4 short sentences, ending in a question unless the dialog is closing) that moves the conversation toward the remaining target words.
 - [ ] **FR5 Error detection and correction**: Errors in the learner message (wrong word, gender, agreement, conjugation, word order, spelling that changes meaning) are detected. At most one is corrected explicitly, as `original`, `corrected`, and a French explanation of at most 20 words. Other errors are recast in the reply.
 - [ ] **FR6 No false corrections**: A correct learner message produces no correction. A correction's `original` must occur in the learner message.
-- [ ] **FR7 Target word tracking**: Target words the learner used correctly (any inflected form) are recorded on the learner turn and removed from the remaining set.
+- [ ] **FR7 Target word tracking**: Target words the learner used (any inflected form) are recorded on the learner turn and removed from the remaining set. A word counts as used when it appears in the learner's message in an appropriate form, including when that use was corrected and when the learner echoed a word the system offered. Target words are the forms produced by vocabulary extraction, used exactly as extracted (no lemmatisation); the creator reports each used target exactly as listed and decides whether the learner's form counts as a use of it. If the page yields two forms of the same word, they are two independent targets; one use may count for both, one or neither.
 - [ ] **FR8 Steering**: The system reply uses or invites a remaining target word on every turn while any remain.
 - [ ] **FR9 Off-topic handling**: English, one-word or off-topic learner messages get a brief French reply and a question that brings back a remaining target word. No correction is issued for a message written in English.
-- [ ] **FR10 End condition**: The dialog ends after `DIALOG_MAX_LEARNER_TURNS` learner turns, when no target words remain, or when the reviewer does not approve a system turn within `DIALOG_MAX_TURN_ATTEMPTS`. For the first two endings the final system turn closes the conversation without a question; when no candidate is approved there is no final system turn and the wrap-up follows the last recorded turn directly.
+- [ ] **FR10 End condition**: The dialog ends after `DIALOG_MAX_LEARNER_TURNS` learner turns, when no target words remain, or when the reviewer does not approve a system turn within `DIALOG_MAX_TURN_ATTEMPTS`. The turn-count ending is known in advance: the last learner turn runs the loop with `is_closing=True`, so its reply closes the conversation without a question. When the words run out on an earlier turn, the reply's text is discarded, its corrections and `target_words_used` are kept, and the loop runs once more with `is_closing=True` to produce a closing turn that shows the correction and says goodbye in one bubble; when that closing loop is not approved or its LLM call fails, the closing message is skipped and the wrap-up is shown. When no candidate is approved on a reply turn, there is no final system turn and the wrap-up follows the last recorded turn directly. Every ending marks the session `COMPLETED` and shows the wrap-up.
 - [ ] **FR11 Wrap-up**: After the final turn a French wrap-up lists the target words used, the target words not used, and every correction made.
 - [ ] **FR12 Review before display**: Every system turn (opening, replies, closing) passes through the creator/reviewer workflow. When the reviewer rejects a candidate, the creator analyses the reviewer feedback and produces an improved candidate, which is reviewed again. The number of attempts per turn is limited by `DIALOG_MAX_TURN_ATTEMPTS`. When the limit is reached without approval, the dialog ends: the session is marked `COMPLETED` and the wrap-up is shown, and no candidate is displayed. A candidate is accepted only when the verdict is approved and the score is at least the loop's approval threshold (default 70, configurable per content type); the loop enforces this itself, so a mislabelled verdict cannot show a low-scored candidate. The dialog topic goes through the same loop with the same limit; when it is not approved, the topic is "" and the opening turn is still reviewed. The loop is one generic component shared by turns and topics (decision 10).
 - [ ] **FR13 Level**: All system text, including the dialog topic, is A2-B1: short sentences, high-frequency vocabulary, present, passé composé and futur proche as default tenses. Target words are exempt.
-- [ ] **FR14 Practice selection**: After vocabulary extraction the learner chooses between Exercises and Dialog practice. A new dialog can be started after one ends, using the next target words. A target word counts as practised only after the learner used it correctly in a dialog (recorded in `target_words_used` on the learner turn); words not used stay available for the next dialog, including all words of a dialog that ends on the opening turn and words not used when a dialog ends early.
-- [ ] **FR15 Progress record**: Each completed dialog is kept in the Streamlit session with its words used, words not used and corrections, for the Review phase. A dialog that ends before its opening turn is approved is not kept.
+- [ ] **FR14 Practice selection**: After vocabulary extraction the learner chooses between Exercises and Dialog practice. A new dialog can be started after one ends, using the next target words. A target word counts as practised only after the learner used it in a dialog (recorded in `target_words_used` on the learner turn); words not used stay available for the next dialog, including all words of a dialog that ends on the opening turn and words not used when a dialog ends early.
+- [ ] **FR15 Progress record**: Each completed dialog is kept in the Streamlit session with its words used, words not used and corrections, for the Review phase. A dialog that ends before its opening turn is approved is not kept. When a dialog is marked `COMPLETED`, its `words_used` are added to `dialog_words_practised` in `st.session_state`; a dialog abandoned through "new dialog" is discarded and credits no words.
 - [ ] **FR16 Switch**: Dialog practice can be disabled through configuration without touching exercise generation.
 
 ### Non-Functional Requirements
 - [ ] **Latency**: A system turn (creator + reviewer, no retry) is shown within 10 s at p50 on `mistral-small` with the default rate limit. A spinner is shown in the chat while waiting.
-- [ ] **Cost**: A system turn makes 2 LLM calls (creator, reviewer) per attempt. A full dialog makes at most 2 × `DIALOG_MAX_TURN_ATTEMPTS` × (`DIALOG_MAX_LEARNER_TURNS` + 1) calls, 28 with the defaults, plus at most 2 × `DIALOG_MAX_TURN_ATTEMPTS` calls per dialog for the topic, 32 in total with the defaults.
+- [ ] **Cost**: A system turn makes 2 LLM calls (creator, reviewer) per attempt. The turn loop runs at most `DIALOG_MAX_LEARNER_TURNS` + 1 times per dialog (opening, one run per learner turn, and one extra closing run when the words run out before the turn limit; the turn-count ending reuses the last learner turn as the closing turn), so a full dialog makes at most 2 × `DIALOG_MAX_TURN_ATTEMPTS` × (`DIALOG_MAX_LEARNER_TURNS` + 1) calls, 28 with the defaults, plus at most 2 × `DIALOG_MAX_TURN_ATTEMPTS` calls per dialog for the topic, 32 in total with the defaults.
 - [ ] **Reliability**: An LLM failure on a turn is reported in the chat in French with an invitation to retry the same message. The dialog state is not corrupted.
 - [ ] **Testability**: The whole dialog runs offline with `MockLLMClient`. Prompts are built by pure functions that can be unit-tested.
 - [ ] **Security**: Learner text is passed to the LLM only inside the prompt. No learner text is logged at INFO level.
@@ -143,18 +143,28 @@ graph TD
 
 ```mermaid
 flowchart TD
-    A[Learner message] --> B[Record learner turn]
-    B --> C[creator_node<br>1 LLM call, structured output]
-    C --> D[Deterministic checks<br>drop corrections not found in message,<br>drop target words not in message]
-    D --> E[reviewer_node<br>1 LLM call, structured output]
-    E --> F{approved?}
-    F -->|yes| G[Record system turn]
-    F -->|no, attempt < max| H[Keep candidate and score,<br>add reviewer feedback to state]
-    H --> C
-    F -->|no, attempt = max| M[End the dialog:<br>mark completed, show wrap-up]
-    G --> J{learner turns = max<br>or no words remaining?}
-    J -->|no| K[Show turn, wait for learner]
-    J -->|yes| L[Mark completed, show wrap-up]
+    A[Learner message] --> B[Append learner turn]
+    B --> C{last allowed learner turn?}
+    C -->|yes| D[is_closing = True]
+    C -->|no| E[is_closing = False]
+    D --> F[Run the turn loop: creator proposes a candidate,<br/>parse step filters words and corrections]
+    E --> F
+    F --> G[Reviewer: hard-failure short-circuit,<br/>then LLM review]
+    G --> H{approved?}
+    H -->|no, attempts remain| F
+    H -->|no, last attempt| M[End the dialog: mark completed, show wrap-up,<br/>learner turn kept with empty target_words_used]
+    H -->|yes| I[Apply target_words_used<br/>to the learner turn]
+    I --> J{is_closing?}
+    J -->|yes| K[Record the closing system turn]
+    J -->|no| L{no words remaining?}
+    L -->|no| N[Record the system reply,<br/>show the turn, wait for the learner]
+    L -->|yes| O[Discard the reply text, keep its corrections,<br/>run the turn loop again with is_closing=True]
+    O --> P{Closing loop approved?}
+    P -->|yes| Q[Record the closing turn:<br/>correction and goodbye in one bubble]
+    P -->|no| R[Skip the closing message]
+    K --> S[Mark completed, show wrap-up]
+    Q --> S
+    R --> S
 
     style A fill:#f9f9f9
     style B fill:#f9f9f9
@@ -164,13 +174,20 @@ flowchart TD
     style F fill:#f9f9f9
     style G fill:#f9f9f9
     style H fill:#f9f9f9
+    style I fill:#f9f9f9
     style J fill:#f9f9f9
     style K fill:#f9f9f9
     style L fill:#f9f9f9
     style M fill:#f9f9f9
+    style N fill:#f9f9f9
+    style O fill:#f9f9f9
+    style P fill:#f9f9f9
+    style Q fill:#f9f9f9
+    style R fill:#f9f9f9
+    style S fill:#f9f9f9
 ```
 
-The boxes from creator to the approval decision are the generic `ReviewLoopWorkflow`; only the creator, the reviewer and the deterministic checks are dialog-specific. When the loop ends without approval, the player marks the dialog completed and shows the wrap-up. The opening turn runs the same loop with an empty learner message and `is_opening=True`. The closing turn runs it with `is_closing=True`, which tells the creator to end without a question.
+The boxes from the creator to the approval decision are the generic `ReviewLoopWorkflow`; only the creator, the reviewer and the parse-step filtering are dialog-specific. When the loop ends without approval, the player marks the dialog completed and shows the wrap-up. The opening turn runs the same loop with an empty learner message and `is_opening=True`. The closing turn runs it with `is_closing=True`, which tells the creator to end without a question; the last learner turn is known to be the last, so it runs with `is_closing=True` directly, and when the words run out earlier the closing turn is a second loop run whose prompt carries the discarded reply's correction (see FR10).
 
 ### Components
 
@@ -179,24 +196,24 @@ The boxes from creator to the approval decision are the generic `ReviewLoopWorkf
 | `models/dialog.py` | Dataclasses `Correction`, `DialogTurn`, `DialogSession`, `DialogSummary`, enum `DialogRole`, `DialogStatus` | stdlib |
 | `dialogs/dialog_prompts.py` | `LEARNER_LEVEL` constant, `build_creator_prompt(...)`, `build_reviewer_prompt(...)`, `build_wrap_up(session)`; pure functions | `models/dialog.py` |
 | `core/review_loop.py` | `ReviewLoopWorkflow[C]`: generic LangGraph loop creator → reviewer → improve on feedback, accepting a candidate only with `approved=true` and score ≥ the loop's approval threshold (default `APPROVAL_THRESHOLD`) and ending without an approved candidate when attempts are exhausted; `Creator[C]` and `Reviewer[C]` protocols; `ReviewVerdict`; `ReviewLoopResult[C]` | LangGraph, pydantic |
-| `dialogs/agents/dialog_turn_creator.py` | `DialogTurnCreatorAgent`, a `Creator[DialogTurnOutput]`: produces a candidate turn with structured output, improves it from feedback | `LLMClient`, `dialog_prompts`, pydantic |
-| `dialogs/agents/dialog_turn_reviewer.py` | `DialogTurnReviewerAgent`, a `Reviewer[DialogTurnOutput]`: deterministic checks, then LLM review returning a `ReviewVerdict` | `LLMClient`, `dialog_prompts`, pydantic |
+| `dialogs/agents/dialog_turn_creator.py` | `DialogTurnCreatorAgent`, a `Creator[DialogTurnOutput]`: produces a candidate turn with structured output, improves it from feedback, and filters the parsed output (word normalisation and membership, correction rules) | `LLMClient`, `dialog_prompts`, pydantic |
+| `dialogs/agents/dialog_turn_reviewer.py` | `DialogTurnReviewerAgent`, a `Reviewer[DialogTurnOutput]`: hard-failure short-circuit (empty or overlong reply, no LLM call), then LLM review returning a `ReviewVerdict` | `LLMClient`, `dialog_prompts`, pydantic |
 | `dialogs/dialog_player.py` | `DialogPlayer`: owns a `DialogSession`, exposes `open()`, `submit_learner_message()`, `is_complete`, `summary()`; builds the turn context, maps an approved loop result to a `DialogTurn` and ends the dialog when the loop returns no approval | `ReviewLoopWorkflow`, `models/dialog.py` |
 | `dialogs/agents/dialog_topic_creator.py` | `DialogTopicCreatorAgent`, a `Creator[DialogTopicOutput]`: candidate fictional topic from the target words | `LLMClient`, `dialog_prompts`, pydantic |
 | `dialogs/agents/dialog_topic_reviewer.py` | `DialogTopicReviewerAgent`, a `Reviewer[DialogTopicOutput]`: checks French, level, fictional everyday situation, fit with each target word | `LLMClient`, `dialog_prompts`, pydantic |
-| `core/application.py` | Builds the agents and the two loops, passing the same approval threshold (default 70) to each loop and its reviewer agent; `start_dialog_session(vocabulary_words)` selects target words, runs the topic loop, returns a `DialogPlayer` | `ReviewLoopWorkflow`, topic agents, `DialogPlayer`, `config` |
+| `core/application.py` | Builds the agents and the two loops, passing the same approval threshold (default 70) to each loop and its reviewer agent; `start_dialog_session(vocabulary_words, practised_words)` selects the first unpractised target words, runs the topic loop, returns a `DialogPlayer` | `ReviewLoopWorkflow`, topic agents, `DialogPlayer`, `config` |
 | `ui/dialog_display.py` | `display_dialog(player)`: renders history, corrections, spinner, wrap-up, "new dialog" button | Streamlit, `DialogPlayer` |
-| `app.py` | Practice-mode selector; keeps the dialog player, practised words and completed dialogs in `st.session_state` | UI modules |
+| `app.py` | Practice-mode selector; keeps the dialog player, practised words and completed dialogs in `st.session_state`; adds a completed dialog's `words_used` to `dialog_words_practised` | UI modules |
 | `core/mock_llm.py` | Returns valid JSON for creator and reviewer prompts | none |
 | `config.py` | `dialog_practice_enabled`, `dialog_words_per_dialog`, `dialog_max_learner_turns`, `dialog_max_turn_attempts` | pydantic-settings |
 
 ### Data Flow
 
-1. **Input**: extracted vocabulary (ordered list). A word counts as practised once the learner used it correctly in a dialog (recorded in `target_words_used` on the learner turn). `start_dialog_session` takes the first `dialog_words_per_dialog` words not yet practised in this Streamlit session, runs the topic workflow on them, and stores the approved fictional topic on the session ("" when the topic is not approved). No page text is involved.
+1. **Input**: extracted vocabulary (ordered list). Target words are the forms produced by vocabulary extraction (lowercased inflected forms), used exactly as extracted; no lemmatisation is applied (the extractor's output is used as-is, so the vocabulary contract stays unchanged for every practice type), and two forms of the same word from one page are two independent targets. A word counts as practised once the learner used it in a dialog (recorded in `target_words_used` on the learner turn). `start_dialog_session(vocabulary_words, practised_words)` takes the first `dialog_words_per_dialog` words of `vocabulary_words` not in `practised_words` (the app passes `st.session_state.dialog_words_practised`), runs the topic workflow on them, and stores the approved fictional topic on the session ("" when the topic is not approved). No page text is involved.
 2. **Opening**: `DialogPlayer.open()` runs the turn loop with no learner message. The approved turn is appended as the first system turn. When the opening turn is not approved, the dialog ends with zero turns: the wrap-up is shown, but the session is not recorded and no word is marked as practised (none was used), so the next dialog reuses them.
-3. **Turn loop**: `submit_learner_message(text)` appends a learner turn, runs the turn loop with the full history, applies the returned `target_words_used` to the learner turn, appends the system turn, and updates the remaining words. When the loop ends without approval, the dialog is marked `COMPLETED` instead and the wrap-up is shown; the learner turn is kept, with no `target_words_used` and no corrections recorded for it.
-4. **End**: when the learner turn count reaches the max, or the remaining set is empty, the turn loop is run with `is_closing=True`. The dialog also ends when a turn is not approved within `DIALOG_MAX_TURN_ATTEMPTS`. The session status becomes `COMPLETED` and `summary()` returns a `DialogSummary`.
-5. **Output**: the `DialogSession` (all turns, corrections, words used) is appended to `st.session_state.completed_dialogs` for the Review phase, unless the dialog ended before its opening turn was approved.
+3. **Turn loop**: `submit_learner_message(text)` appends a learner turn and runs the turn loop with the full history (`is_closing=True` when this is the last allowed learner turn). On approval it applies the returned `target_words_used` to the learner turn and appends the system turn. When the loop ends without approval, the dialog is marked `COMPLETED` instead and the wrap-up is shown; the learner turn is kept, with no `target_words_used` and no corrections recorded for it. When the words run out on a non-closing turn, the reply's text is discarded, its corrections are kept, and the turn loop runs once more with `is_closing=True` (the closing prompt carries the kept correction); the closing turn is appended, or skipped when that loop is not approved or its LLM call fails, and the dialog is marked `COMPLETED` with the wrap-up.
+4. **End**: the dialog ends when the learner turn count reaches the max (the last turn already ran with `is_closing=True`), when the remaining set is empty (closing turn appended as in step 3), or when a turn is not approved within `DIALOG_MAX_TURN_ATTEMPTS`. The session status becomes `COMPLETED` and `summary()` returns a `DialogSummary`.
+5. **Output**: the `DialogSession` (all turns, corrections, words used) is appended to `st.session_state.completed_dialogs` for the Review phase, unless the dialog ended before its opening turn was approved, and its `words_used` are added to `st.session_state.dialog_words_practised`. A dialog abandoned through "new dialog" is discarded and credits no words.
 
 ### Prompt design
 
@@ -230,9 +247,11 @@ Rules for corrections (field "corrections"):
   (French, at most 20 words, level {LEARNER_LEVEL}).
 - Do not list other errors. Instead reuse their correct form naturally in your reply.
 - If there are no errors, "corrections" is an empty list. Never invent an error.
-
-Field "target_words_used": the target words the learner used correctly in the last
-message, in any inflected form. Empty list if none.
+{carried_correction_block}
+Field "target_words_used": the target words the learner used in the last message,
+in any inflected form, each reported exactly as listed in the target words (never the
+learner's own form). A word counts even when its use was corrected, and when the learner
+only echoed a word the system offered. Empty list if none.
 
 Conversation so far:
 {history}
@@ -241,7 +260,7 @@ Learner's last message: "{learner_message}"
 {reviewer_feedback_block}
 ```
 
-`ending_rule` is "End with one question." for normal turns, "Start the conversation with a greeting and one question." for the opening turn, and "Close the conversation warmly. Do not ask a question." for the closing turn. `reviewer_feedback_block` is empty on the first attempt. On later attempts it reads "A reviewer rejected your previous reply. Previous reply: {previous_reply}. Previous corrections: {previous_corrections}. Reviewer feedback: {feedback}. Analyse the feedback, keep what was right, fix what was wrong, and produce an improved reply."
+`ending_rule` is "End with one question." for normal turns, "Start the conversation with a greeting and one question." for the opening turn, and "Close the conversation warmly. Do not ask a question." for the closing turn. `carried_correction_block` is empty except on a closing turn that answers a learner message (the words ran out), where it reads "Correction to show first: {original} → {corrected} : {explanation}." `reviewer_feedback_block` is empty on the first attempt. On later attempts it reads "A reviewer rejected your previous reply. Previous reply: {previous_reply}. Previous corrections: {previous_corrections}. Reviewer feedback: {feedback}. Analyse the feedback, keep what was right, fix what was wrong, and produce an improved reply."
 
 **Reviewer prompt** (built by `build_reviewer_prompt`):
 
@@ -252,7 +271,6 @@ Learner's last message: "{learner_message}"
 Target words: {target_words}. Not used yet before this turn: {words_remaining}
 Candidate reply: "{reply}"
 Candidate corrections: {corrections_json}
-Candidate target_words_used: {target_words_used}
 
 Check, in this order:
 1. Every correction is linguistically correct, the "original" really is an error, and
@@ -262,13 +280,12 @@ Check, in this order:
    or passé simple.
 4. The reply {ending_check}.
 5. The reply uses or invites a word not used yet, if any remain.
-6. target_words_used only lists target words the learner really used correctly.
 
 Respond with approved (true only if score >= {approval_threshold} and check 1 passed), score (0-100)
 and feedback (English, one or two sentences naming what to fix).
 ```
 
-`ending_check` is "ends with a question" for normal and opening turns and "closes the conversation without a question" for the closing turn. `{approval_threshold}` is the threshold configured on the loop (default 70); it appears in both reviewer prompts. The reviewer agents receive the same value and the loop enforces it, so the prompt and the enforcement cannot drift apart.
+`ending_check` is "ends with a question" for normal and opening turns and "closes the conversation without a question" for the closing turn. `{approval_threshold}` is the threshold configured on the loop (default 70); it appears in both reviewer prompts. The reviewer agents receive the same value and the loop enforces it, so the prompt and the enforcement cannot drift apart. The reviewer does not score `target_words_used`: it is bookkeeping the learner never sees, and a borderline word-tracking call must not be able to end the dialog. Word tracking is the creator's proposal, filtered deterministically in its parse step (see below).
 
 **Topic creator prompt** (built by `build_topic_creator_prompt`, `temperature=0.7`, `max_tokens=250`):
 
@@ -313,15 +330,23 @@ Respond with approved (true only if score >= {approval_threshold}), score (0-100
 
 The reviewer output is the shared `ReviewVerdict`. The topic runs through the same `ReviewLoopWorkflow` as turns: reject → creator improves from feedback → review, up to `DIALOG_MAX_TURN_ATTEMPTS`. If the reviewer never approves or every call fails, the topic is "" and the turn creator prompt line for the topic reads "Topic: choose a simple everyday situation in which the target words fit naturally."
 
-**Deterministic checks** (run in the reviewer node before the LLM call, mirroring the trivial checks of `ExerciseReviewerAgent`):
+**Creator parse-step filtering** (run when the creator parses the model's answer; the context gives it the learner message, so no candidate mutation is needed):
+
+| Rule | Action |
+|------|--------|
+| Each proposed target word is normalised (Unicode NFC, lowercase) and must be in the target set | Drop words not in the target set |
+| `correction.original` is not a case-insensitive substring of the learner message | Drop that correction |
+| More than one correction | Keep the first, drop the rest |
+| Opening turn has corrections | Drop all corrections |
+| Closing turn | Corrections are allowed only for the learner message it answers (the rules above apply) |
+
+Whether the learner's inflected form counts as a use of a target is the creator's judgment; there is no prefix-matching rule, because irregular forms (prévenir → prévient, boire → bu) share no five-character prefix with their dictionary form.
+
+**Reviewer hard-failure short-circuit** (run in the reviewer node before the LLM call, mirroring the trivial checks of `ExerciseReviewerAgent`):
 
 | Check | Action |
 |-------|--------|
 | Reply is empty or has more than 6 sentences | Reject with feedback, no LLM call |
-| `correction.original` is not a case-insensitive substring of the learner message | Drop that correction |
-| Word in `target_words_used` is not a target word, or none of its first 5 characters match a token in the learner message | Drop that word |
-| More than one correction | Keep the first, drop the rest |
-| Opening or closing turn has corrections | Drop all corrections |
 
 **Wrap-up** (`build_wrap_up`, no LLM call, fixed French template):
 
@@ -340,7 +365,8 @@ Corrections :
 | Reviewer approves (`approved=true` and score ≥ the approval threshold, default 70) | Turn is shown |
 | Reviewer rejects, attempts < `dialog_max_turn_attempts` | The candidate and its score are kept in state. The creator runs again with the previous candidate and the reviewer feedback in the prompt and returns an improved candidate |
 | Reviewer rejects on the last attempt | The dialog ends: the session is marked `COMPLETED` and the wrap-up is shown. No candidate is displayed and no LLM call is made. The learner turn is kept in the session, but no system turn is appended, so its `target_words_used` and corrections are not recorded and its words appear under « Mots à revoir » in the wrap-up |
-| LLM raises on any call | The learner turn is removed from the session, an error line in French is shown ("Désolé, il y a eu un problème. Réessaie ton message.") and the learner can resend |
+| The closing loop (words ran out) is not approved or its LLM call fails | The closing message is skipped: the session is marked `COMPLETED` and the wrap-up is shown. The reply text was already discarded; its `target_words_used` stay applied to the learner turn |
+| LLM raises on a reply-loop call | The learner turn is removed from the session, an error line in French is shown ("Désolé, il y a eu un problème. Réessaie ton message.") and the learner can resend |
 
 The loop enforces the threshold itself: a verdict with `approved=true` but a score below the threshold is treated as a rejection, so a low-scored candidate is never shown even if the reviewer mislabels it.
 
@@ -401,10 +427,10 @@ class DialogPlayer:
 
 # core/application.py (addition)
 def start_dialog_session(
-    self, vocabulary_words: list[str], dialog_topic: str = ""
+    self, vocabulary_words: list[str], practised_words: set[str]
 ) -> DialogPlayer:
-    """Select the first `dialog_words_per_dialog` words and return a ready DialogPlayer.
-    The caller passes words not yet practised in this session."""
+    """Select the first `dialog_words_per_dialog` words of `vocabulary_words` not in
+    `practised_words`, run the topic loop on them and return a ready DialogPlayer."""
 
 
 def create_dialog_topic(self, target_words: list[str]) -> str:
@@ -464,18 +490,24 @@ class DialogTurnContext:
     session: DialogSession
     learner_message: str | None      # None means opening turn
     is_closing: bool
+    carried_corrections: list[Correction] = field(default_factory=list)   # closing turn only: the discarded reply's corrections
 
 
 class DialogTurnCreatorAgent:        # implements Creator[DialogTurnOutput]
     def __init__(self, llm_client: LLMClient) -> None: ...
     def create(self, context: DialogTurnContext, previous: DialogTurnOutput | None,
-               feedback: str | None) -> DialogTurnOutput: ...
+               feedback: str | None) -> DialogTurnOutput:
+        """One LLM call with structured output, then parse-step filtering of the
+        parsed candidate (word normalisation and membership, correction rules).
+        Raises DialogTurnError on invalid JSON."""
 
 
 # dialogs/agents/dialog_turn_reviewer.py
 class DialogTurnReviewerAgent:       # implements Reviewer[DialogTurnOutput]
     def __init__(self, llm_client: LLMClient, approval_threshold: int = 70) -> None: ...
-    def review(self, context: DialogTurnContext, candidate: DialogTurnOutput) -> ReviewVerdict: ...
+    def review(self, context: DialogTurnContext, candidate: DialogTurnOutput) -> ReviewVerdict:
+        """Hard-failure short-circuit (empty or overlong reply, no LLM call), then
+        one LLM review call. Does not score `target_words_used`."""
 
 
 # dialogs/agents/dialog_topic_creator.py / dialog_topic_reviewer.py
@@ -491,6 +523,7 @@ def build_creator_prompt(
     learner_message: str | None,
     is_closing: bool,
     reviewer_feedback: str | None = None,
+    carried_corrections: list[Correction] | None = None,
 ) -> str: ...
 
 def build_reviewer_prompt(
@@ -635,21 +668,21 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 ### Steps
 - [ ] **Step 1: Models and configuration**
   - [x] Add `models/dialog.py` with the dataclasses and enums above
-  - [ ] Add the four settings to `config.py` and document them in `INSTRUCTIONS.md` and `specs/tech-stack.md`
+  - [ ] Add the four settings to `config.py` and document them in `INSTRUCTIONS.md` and `specs/tech-stack.md` (settings added; documentation lands with Step 8)
   - [x] Unit tests for `DialogSession` properties (`learner_turn_count`, `words_used`, `words_remaining`)
 - [ ] **Step 2: Prompts and creator agent**
-  - [ ] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`
-  - [ ] Add `dialogs/agents/dialog_turn_creator.py` with `DialogTurnOutput` and the creator node (one `generate` call with `response_schema`, `temperature=0.7`, `max_tokens=300`)
-  - [ ] Unit tests: prompt contains level, target words, remaining words, history, ending rule per turn kind; creator parses valid JSON and raises `DialogTurnError` on invalid JSON
+  - [ ] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`; the creator prompt states that target words are returned exactly as listed, and the closing prompt carries the discarded reply's correction
+  - [ ] Add `dialogs/agents/dialog_turn_creator.py` with `DialogTurnOutput` and the creator node (one `generate` call with `response_schema`, `temperature=0.7`, `max_tokens=300`), including the parse-step filtering (word normalisation and membership, correction rules)
+  - [ ] Unit tests: prompt contains level, target words, remaining words, history, ending rule per turn kind; creator parses valid JSON and raises `DialogTurnError` on invalid JSON; the word filter keeps listed forms, drops unlisted ones and normalises case and accents (targets `prévenir`/`boire` against "prévient" and "bu")
 - [ ] **Step 3: Generic review loop, reviewer agents**
   - [x] Add `core/review_loop.py`: `ReviewVerdict`, `Creator` and `Reviewer` protocols, `ReviewLoopResult`, `ReviewLoopWorkflow` as a LangGraph StateGraph with a conditional edge back to the creator while rejected and `attempt < max_attempts`, ending without an approved candidate otherwise, with a configurable `approval_threshold` (default 70)
   - [x] Unit tests for the loop with stub creator and reviewer (no LLM): approve on first attempt; reject then approve, with `previous` and `feedback` passed to the second `create`; all attempts rejected then `approved=False` with `candidate=None`; `approved=true` with a score below the threshold treated as a rejection; a custom `approval_threshold` enforced; creator exception propagates
-  - [ ] Add `dialogs/agents/dialog_turn_reviewer.py` with the deterministic checks and the LLM review (`temperature=0.3`, `max_tokens=200`)
+  - [ ] Add `dialogs/agents/dialog_turn_reviewer.py` with the hard-failure short-circuit (empty or overlong reply, no LLM call) and the LLM review (`temperature=0.3`, `max_tokens=200`); it does not score `target_words_used`
   - [ ] Add `dialogs/agents/dialog_topic_creator.py` and `dialog_topic_reviewer.py`; unit tests with `MockLLMClient` for each agent, plus one end-to-end topic loop test that returns "" when the LLM raises or the reviewer never approves
 - [ ] **Step 4: Player and application wiring**
-  - [ ] Add `dialogs/dialog_player.py`
-  - [ ] Add `start_dialog_session` to `LanguageLearnerApplication`
-  - [ ] Unit tests: full dialog with `MockLLMClient`, end by turn count, end by all words used, end when the reviewer never approves, blank message rejected, LLM failure leaves session unchanged
+  - [ ] Add `dialogs/dialog_player.py`: the last learner turn runs with `is_closing=True` directly; when the words run out earlier, the reply text is discarded, its corrections are carried into a closing loop run, and the closing turn is skipped when that loop fails
+  - [ ] Add `start_dialog_session(vocabulary_words, practised_words)` to `LanguageLearnerApplication`
+  - [ ] Unit tests: full dialog with `MockLLMClient`, end by turn count, end by all words used (closing turn shown, reply text discarded), end when the reviewer never approves, closing loop failure skips the closing message, blank message rejected, LLM failure leaves session unchanged
 - [ ] **Step 5: Mock LLM**
   - [ ] Extend `MockLLMClient.generate` to recognise the topic creator prompt (marker "prepare the topic"), the topic reviewer prompt (marker "reviewing the topic"), the turn creator prompt (marker "French conversation partner") and the turn reviewer prompt (marker "reviewing one turn") and return valid JSON for each; make the reviewer verdict overridable via the existing `responses` dict so tests can force a rejection
 - [ ] **Step 6: UI**
@@ -674,6 +707,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 - [ ] AC3: With the real client, the message "Le gouvernement prévient les gens pour boire de l'eau" during a dialog whose target words include *prévenir* produces exactly one correction whose `corrected` contains "de boire" and whose `explanation` is French.
 - [ ] AC4: With the real client, a correct learner message ("Il n'y a pas de pluie depuis deux mois.") produces no correction in at least 4 of 5 runs.
 - [ ] AC5: A learner message in English produces a French reply, no correction, and a question.
+- [ ] AC14: With the real client, the message "Oui, il fait beaucoup de chaleur. Le gouvernement prévient les gens pour boire de l'eau." during a dialog whose target words include *chaleur* and *prévenir* records `target_words_used` containing both words.
 - [ ] AC6: The dialog ends after `DIALOG_MAX_LEARNER_TURNS` learner turns, earlier when all target words were used, and when the reviewer does not approve a turn within `DIALOG_MAX_TURN_ATTEMPTS`.
 - [ ] AC7: The wrap-up lists words used, words not used and all corrections, in French.
 - [ ] AC8: The Exercises path is unchanged: all existing tests pass.
@@ -689,9 +723,10 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 - [x] TC1 `DialogSession.words_remaining` shrinks as learner turns record `target_words_used`, and never contains a word twice.
 - [ ] TC2 `build_creator_prompt` for the opening turn contains the greeting rule and no learner message; for the closing turn contains the closing rule.
 - [ ] TC3 Creator node raises `DialogTurnError` when the LLM returns non-JSON.
-- [ ] TC4 Reviewer drops a correction whose `original` is not in the learner message.
-- [ ] TC5 Reviewer keeps only the first of two corrections.
-- [ ] TC6 Reviewer drops all corrections on the opening turn.
+- [ ] TC4 Creator parse step drops a correction whose `original` is not in the learner message.
+- [ ] TC5 Creator parse step keeps only the first of two corrections.
+- [ ] TC6 Creator parse step drops all corrections on the opening turn, and keeps the answered message's correction on a closing turn.
+- [ ] TC20 Creator parse step normalises proposed target words (Unicode NFC, lowercase) and keeps only words in the target set: with targets `prévenir`/`boire`, a proposal of `prévenir` is kept, `prévient` (the learner's form) is dropped, and `Boire` is normalised to `boire`.
 - [ ] TC7 `ReviewLoopWorkflow` returns the candidate on approval with `attempts=1` and `approved=True`; the player sets `review_score` from the verdict.
 - [ ] TC8 `ReviewLoopWorkflow`, on rejection, calls `create` again with the previous candidate and the feedback, and returns the second candidate when approved with `attempts=2`.
 - [ ] TC9 `ReviewLoopWorkflow`, after `max_attempts` rejections, returns `approved=False` with `candidate=None`; the player marks the dialog `COMPLETED` and shows the wrap-up.
@@ -703,7 +738,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 - [ ] TC16 `build_topic_creator_prompt` contains the level constant, every target word, the sentence-length limit and the fictional-situation rule; `build_topic_reviewer_prompt` contains every target word and the fit check.
 - [ ] TC17 Topic loop end to end with `MockLLMClient`: approved topic returned; "" returned when the LLM raises or the reviewer never approves.
 - [ ] TC18 Integration: the topic for 4 fixed target words has 2 to 4 sentences, none longer than 15 words, and the reviewer approves it.
-- [ ] TC14 Integration: AC3, AC4, AC5 against Mistral, marked `integration`.
+- [ ] TC14 Integration: AC3, AC4, AC5, AC14 against Mistral, marked `integration`.
 - [ ] TC19 Player ends the dialog (status `COMPLETED`, wrap-up shown, no system turn appended, learner turn kept with empty `target_words_used`) when the turn loop returns no approval.
 
 ---
@@ -734,18 +769,18 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 ### Unit Tests
 - [x] `tests/test_dialog_models.py`: TC1
 - [ ] `tests/test_dialog_prompts.py`: TC2, TC13
-- [ ] `tests/test_dialog_turn_creator.py`: TC3, JSON parsing
-- [ ] `tests/test_dialog_turn_reviewer.py`: TC4, TC5, TC6
+- [ ] `tests/test_dialog_turn_creator.py`: TC3, JSON parsing, TC4, TC5, TC6, TC20 (parse-step filtering)
+- [ ] `tests/test_dialog_turn_reviewer.py`: hard-failure short-circuit (empty or overlong reply, no LLM call)
 - [x] `tests/test_review_loop.py`: TC7, TC8, TC9 with stub creator and reviewer, no LLM
 - [ ] `tests/test_dialog_player.py`: TC10, TC11, TC12, TC19, full mock dialog (AC1)
 
 ### Integration Tests
-- [ ] `tests/integration/test_dialog_practice_integration.py` using the `real_llm_client` fixture: one dialog of 3 learner turns with the messages from AC3, AC4 and AC5; assert correction presence/absence, French reply (no token from a small English stop-word list: "the", "is", "you", "and", "to"), reply ends with "?" on non-closing turns.
+- [ ] `tests/integration/test_dialog_practice_integration.py` using the `real_llm_client` fixture: one dialog of 3 learner turns with the messages from AC3, AC4 and AC5; assert correction presence/absence, French reply (no token from a small English stop-word list: "the", "is", "you", "and", "to"), reply ends with "?" on non-closing turns, and the AC3 message records `target_words_used` containing `chaleur` and `prévenir` (AC14).
 
 ### Manual Testing
 - [ ] Extract vocabulary from a French news article and choose Dialog; check the topic is a fictional everyday situation in French at A2-B1 (short sentences, everyday words, no subjunctive or passé simple) in which the target words fit naturally, and that it does not retell the article. Then and complete one dialog with deliberate errors (gender, agreement, missing "de"); check each correction is right and in French.
 - [ ] Answer one turn in English and one with a single word; check the reply stays in French and asks a question with a remaining word.
-- [ ] Use all target words within 3 turns; check the dialog closes early with a wrap-up.
+- [ ] Use all target words within 3 turns; check the dialog closes early with a closing turn (correction and goodbye in one bubble) and a wrap-up.
 - [ ] Complete two dialogs from the same page; check the second uses the words the first dialog did not use.
 - [ ] End a dialog early because the reviewer never approves a turn; check the wrap-up lists the words not used and the next dialog starts with those words.
 - [ ] Set `DIALOG_PRACTICE_ENABLED=false`; check the selector is gone.
@@ -779,7 +814,8 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 | Mistral ignores or malforms the JSON schema | Low | High | Strict `json_schema` mode already proven in `AnswerEvaluator`; parse failure raises `DialogTurnError`, learner can resend |
 | Latency of 2 to 3 calls per turn with 0.8 calls/s rate limit | High | Medium | Spinner in chat; dialogs are short; `max_tokens` kept small; measured in AC11 |
 | Learner never uses target words, dialog drags | Medium | Low | Hard cap on learner turns; steering rule every turn |
-| Inflected target words not recognised as used | Medium | Low | LLM reports `target_words_used`; deterministic check uses a 5-character prefix match |
+| Inflected target words not recognised as used | Medium | Low | The creator judges whether an inflected form counts and reports the target exactly as listed; the parse step normalises (NFC, lowercase) and keeps only listed words; AC14 checks the intent's example end to end |
+| The closing turn doubles the last turn's latency and can fail after the reply text was discarded | Medium | Low | Closing-loop failure skips the closing message and shows the wrap-up (FR10); latency measured in AC11 |
 | Streamlit rerun loses in-flight turn | Medium | Medium | Player stored in `st.session_state`; turn result appended before rerun; learner turn removed on failure |
 | Mock LLM marker strings drift from real prompts | Low | Medium | Markers are constants imported from `dialog_prompts.py` by both the builders and the mock |
 | Topic or dialog reproduces page content | Very low | Medium | Neither the topic agents nor the turn agents ever receive page text; only the word list |
@@ -834,6 +870,20 @@ Three options were considered.
 **Option B: end the dialog (chosen).** The session is marked `COMPLETED` and the wrap-up is shown; no candidate is displayed. Chosen: it is better to stop the dialog with a closing message than to display a sub-standard response. Nothing unapproved ever reaches the learner, the rule needs no new content type, and the learner keeps their progress (words used, corrections) and can start a new dialog with the remaining words.
 
 **Option C: show a neutral fallback line.** A canned French line replaces the rejected turn and the dialog continues. Rejected: it adds a new content path to the chat without solving the rejection, and the dialog still ends on the next exhausted turn.
+
+### Sub-decision: how the dialog closes when the words run out
+The creator reports `target_words_used` in the same call as the reply, so the dialog only learns that the last words were used after the reply was written under the normal rule "End with one question."
+
+**Option (a): an extra closing turn (chosen).** Keep the reply's corrections and `target_words_used`, discard its text, and run the loop once more with `is_closing=True`, so a single bubble shows the correction and the goodbye. The turn-count ending is known in advance, so the last learner turn runs with `is_closing=True` directly and needs no extra run; the bound of `DIALOG_MAX_LEARNER_TURNS` + 1 loop runs (28 calls with the defaults) still holds. Chosen: nothing unanswered is shown and the reviewer stays strict. Costs: the last turn takes two loops (about 2× latency behind one spinner), and the closing loop needs failure rules — when it is not approved or its LLM call fails, the closing message is skipped and the wrap-up is shown.
+
+**Option (b): tell the creator to close in the same call.** "If this message uses every remaining word, close instead of asking." No extra calls and no new failure path, but the reviewer's `ending_check` must accept either ending, so it can no longer reject a wrong ending as firmly. Rejected: the reviewer's strictness is what keeps sub-standard content from the learner, and the intent prefers stopping over showing something weak.
+
+### Sub-decision: who judges whether a target word was used
+`target_words_used` is bookkeeping the learner never sees, yet a reviewer check on it could lower the score, exhaust the attempts and end the whole dialog over an invisible field.
+
+**Option A: the reviewer scores it (rejected).** A borderline call on word tracking ends the dialog, and "used correctly" is undefined — the intent's own example counts *prévenir* as used in a sentence the correction is about.
+
+**Option B: the creator proposes it, filtered deterministically, and the reviewer ignores it (chosen).** The creator reports each used target exactly as listed and judges whether the learner's inflected form counts; its parse step normalises each proposed word (Unicode NFC, lowercase) and keeps only words in the target set. The reviewer scores only what the learner sees (reply and corrections). A word counts as used when it appears in the learner's message in an appropriate form, including when that use was corrected or echoed from the system's offer.
 
 ### Sub-decision: one generic review loop instead of one workflow per content type
 Turns and topics need the same loop, and every future generated artefact in this application (exercises, hints, summaries) will need it too. Writing it once in `core/review_loop.py` behind `Creator` and `Reviewer` protocols keeps the dialog agents to prompt building and parsing, and lets the loop be tested without any LLM. `ExerciseWorkflow` is not migrated in this feature; that is a candidate refactor for the exercise-generation spec.

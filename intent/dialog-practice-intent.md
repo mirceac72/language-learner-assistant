@@ -148,7 +148,8 @@ The spec must follow these.
 6. **Quality review: every dialog turn goes through the creator/reviewer workflow**
    before display. Extra latency is accepted for v1.
 7. **Recorded per dialog for the Review phase**: target words the learner used
-   correctly, and the corrections made. How they are displayed is decided in the
+   (a word counts even when its use was corrected, or echoed from the system's offer),
+   and the corrections made. How they are displayed is decided in the
    review-phase spec.
 8. **Level: fixed at A2-B1.** No learner-facing level setting for now.
 9. **Dialog topic: fictional, built from the target words, reviewed like a turn.** The
