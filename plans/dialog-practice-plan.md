@@ -23,7 +23,7 @@ persistence of completed dialogs, external prompt files.
 | `src/language_learner/core/review_loop.py` | `ReviewVerdict`, `Creator`/`Reviewer` protocols, `ReviewLoopResult`, `ReviewLoopWorkflow` (LangGraph) |
 | `src/language_learner/models/dialog.py` | `DialogRole`, `DialogStatus`, `Correction`, `DialogTurn`, `DialogSession`, `DialogSummary` |
 | `src/language_learner/dialogs/__init__.py` | package marker |
-| `src/language_learner/dialogs/dialog_prompts.py` | `LEARNER_LEVEL`, prompt marker constants, four prompt builders, `build_wrap_up` |
+| `src/language_learner/dialogs/dialog_prompts.py` | `LEARNER_LEVEL`, prompt marker constants, four French prompt builders, `build_wrap_up` |
 | `src/language_learner/dialogs/agents/__init__.py` | package marker |
 | `src/language_learner/dialogs/agents/dialog_turn_creator.py` | `DialogTurnContext` (with `carried_corrections`), `CorrectionOutput`, `DialogTurnOutput`, `DialogTurnCreatorAgent`, parse-step filtering |
 | `src/language_learner/dialogs/agents/dialog_turn_reviewer.py` | hard-failure short-circuit (empty or overlong reply), `DialogTurnReviewerAgent` |
@@ -72,7 +72,9 @@ green, then one commit with a single-line Conventional Commits message.
    Commit: `feat: add dialog session models and dialog practice settings`
 
 3. **Prompts and mock markers.** `dialogs/dialog_prompts.py` with marker constants that both
-   the builders and `MockLLMClient` import, so they cannot drift. The creator prompt states
+   the builders and `MockLLMClient` import, so they cannot drift. The four prompts are written
+   in French (structured-output field names stay English); this reduces the English content
+   in the prompt and the risk of English leaking into learner-facing text. The creator prompt states
    that target words are returned exactly as listed; the closing prompt carries the discarded
    reply's correction. Extend `mock_llm.py` to answer all four prompts with valid JSON.
    `tests/test_dialog_prompts.py`.

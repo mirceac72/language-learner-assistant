@@ -217,92 +217,93 @@ The boxes from the creator to the approval decision are the generic `ReviewLoopW
 
 ### Prompt design
 
-Prompts are English instructions to the model; all learner-facing text they produce is French.
+The prompt instructions are written in French; this reduces the English content in the prompt and the risk of English leaking into learner-facing text. The learner-facing text they produce is intended to be French. Structured-output field names (`approved`, `score`, `feedback`, `reply`, `corrections`, `original`, `corrected`, `explanation`, `target_words_used`, `topic`) stay English; only the instructions around them are French.
 
 **Creator prompt** (built by `build_creator_prompt`):
 
 ```
-You are a friendly French conversation partner for a learner at level {LEARNER_LEVEL} (CEFR).
-Topic of the conversation:
+Tu es un partenaire de conversation français sympathique pour un apprenant de niveau {LEARNER_LEVEL} (CECR).
+Sujet de la conversation :
 {dialog_topic}
 
-Target words the learner should practise: {target_words}
-Target words not used yet: {words_remaining}
+Mots cibles que l'apprenant doit pratiquer : {target_words}
+Mots cibles pas encore utilisés : {words_remaining}
 
-Rules for your reply:
-- Write in French only. Never use English.
-- Level {LEARNER_LEVEL}: sentences of at most 15 words, common vocabulary, present tense,
-  passé composé and futur proche. No subjunctive, no passé simple, no idioms. The target
-  words are the only exception.
-- 2 to 4 sentences. {ending_rule}
-- Use one of the words not used yet, or ask a question that invites the learner to use it.
-- If the learner wrote in English, answered with one word, or went off topic: reply briefly,
-  do not correct, and ask a question that brings back a word not used yet.
+Règles pour ta réponse :
+- Écris en français uniquement. Jamais d'anglais.
+- Niveau {LEARNER_LEVEL} : phrases de 15 mots maximum, vocabulaire courant, présent,
+  passé composé et futur proche. Pas de subjonctif, pas de passé simple, pas d'idiomes.
+  Les mots cibles sont la seule exception.
+- 2 à 4 phrases. {ending_rule}
+- Utilise un des mots pas encore utilisés, ou pose une question qui invite l'apprenant à l'utiliser.
+- Si l'apprenant a écrit en anglais, répondu par un seul mot ou est hors sujet : réponds
+  brièvement, ne corrige pas, et pose une question qui ramène un mot pas encore utilisé.
 
-Rules for corrections (field "corrections"):
-- Look for errors in the learner's last message only: wrong word, gender, agreement,
-  conjugation, word order, spelling that changes the meaning.
-- If there are errors, put the single most important one in "corrections" with:
-  "original" (copied exactly from the learner's message), "corrected", and "explanation"
-  (French, at most 20 words, level {LEARNER_LEVEL}).
-- Do not list other errors. Instead reuse their correct form naturally in your reply.
-- If there are no errors, "corrections" is an empty list. Never invent an error.
+Règles pour les corrections (champ « corrections ») :
+- Cherche les erreurs dans le dernier message de l'apprenant uniquement : mauvais mot,
+  genre, accord, conjugaison, ordre des mots, orthographe qui change le sens.
+- S'il y a des erreurs, mets la plus importante dans « corrections » avec :
+  « original » (copié exactement du message de l'apprenant), « corrected » et « explanation »
+  (en français, 20 mots maximum, niveau {LEARNER_LEVEL}).
+- Ne liste pas les autres erreurs. Réutilise plutôt leur forme correcte naturellement dans ta réponse.
+- S'il n'y a pas d'erreur, « corrections » est une liste vide. N'invente jamais d'erreur.
 {carried_correction_block}
-Field "target_words_used": the target words the learner used in the last message,
-in any inflected form, each reported exactly as listed in the target words (never the
-learner's own form). A word counts even when its use was corrected, and when the learner
-only echoed a word the system offered. Empty list if none.
+Champ « target_words_used » : les mots cibles que l'apprenant a utilisés dans le dernier
+message, sous n'importe quelle forme fléchie, chacun rapporté exactement comme listé dans
+les mots cibles (jamais la forme de l'apprenant). Un mot compte même si son emploi a été
+corrigé, et quand l'apprenant n'a fait que répéter un mot offert par le système. Liste vide
+si aucun.
 
-Conversation so far:
+Conversation jusqu'ici :
 {history}
 
-Learner's last message: "{learner_message}"
+Dernier message de l'apprenant : « {learner_message} »
 {reviewer_feedback_block}
 ```
 
-`ending_rule` is "End with one question." for normal turns, "Start the conversation with a greeting and one question." for the opening turn, and "Close the conversation warmly. Do not ask a question." for the closing turn. `carried_correction_block` is empty except on a closing turn that answers a learner message (the words ran out), where it reads "Correction to show first: {original} → {corrected} : {explanation}." `reviewer_feedback_block` is empty on the first attempt. On later attempts it reads "A reviewer rejected your previous reply. Previous reply: {previous_reply}. Previous corrections: {previous_corrections}. Reviewer feedback: {feedback}. Analyse the feedback, keep what was right, fix what was wrong, and produce an improved reply."
+`ending_rule` vaut « Termine par une question. » pour les tours normaux, « Commence la conversation par une salutation et une question. » pour le tour d'ouverture, et « Termine la conversation chaleureusement. Ne pose pas de question. » pour le tour de clôture. `carried_correction_block` est vide, sauf sur un tour de clôture qui répond à un message de l'apprenant (les mots sont épuisés), où il vaut « Correction à montrer d'abord : {original} → {corrected} : {explanation}. » `reviewer_feedback_block` est vide à la première tentative. Aux tentatives suivantes, il vaut « Un relecteur a rejeté ta réponse précédente. Réponse précédente : {previous_reply}. Corrections précédentes : {previous_corrections}. Commentaire du relecteur : {feedback}. Analyse le commentaire, garde ce qui était juste, corrige ce qui était faux, et produis une réponse améliorée. »
 
 **Reviewer prompt** (built by `build_reviewer_prompt`):
 
 ```
-You are reviewing one turn of a French conversation for a learner at level {LEARNER_LEVEL}.
+Tu examines un tour d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
 
-Learner's last message: "{learner_message}"
-Target words: {target_words}. Not used yet before this turn: {words_remaining}
-Candidate reply: "{reply}"
-Candidate corrections: {corrections_json}
+Dernier message de l'apprenant : « {learner_message} »
+Mots cibles : {target_words}. Pas encore utilisés avant ce tour : {words_remaining}
+Réponse candidate : « {reply} »
+Corrections candidates : {corrections_json}
 
-Check, in this order:
-1. Every correction is linguistically correct, the "original" really is an error, and
-   the "corrected" form is right. A wrong or unnecessary correction means score 0.
-2. The reply is French only.
-3. The reply is at level {LEARNER_LEVEL}: short sentences, common words, no subjunctive
-   or passé simple.
-4. The reply {ending_check}.
-5. The reply uses or invites a word not used yet, if any remain.
+Vérifie, dans cet ordre :
+1. Chaque correction est linguistiquement correcte, l'« original » est vraiment une erreur,
+   et la forme « corrected » est juste. Une correction fausse ou inutile vaut score 0.
+2. La réponse est en français uniquement.
+3. La réponse est au niveau {LEARNER_LEVEL} : phrases courtes, mots courants, pas de
+   subjonctif ni de passé simple.
+4. La réponse {ending_check}.
+5. La réponse utilise ou invite un mot pas encore utilisé, s'il en reste.
 
-Respond with approved (true only if score >= {approval_threshold} and check 1 passed), score (0-100)
-and feedback (English, one or two sentences naming what to fix).
+Réponds avec approved (true seulement si score >= {approval_threshold} et la vérification 1
+est passée), score (0-100) et feedback (en français, une ou deux phrases indiquant quoi corriger).
 ```
 
-`ending_check` is "ends with a question" for normal and opening turns and "closes the conversation without a question" for the closing turn. `{approval_threshold}` is the threshold configured on the loop (default 70); it appears in both reviewer prompts. The reviewer agents receive the same value and the loop enforces it, so the prompt and the enforcement cannot drift apart. The reviewer does not score `target_words_used`: it is bookkeeping the learner never sees, and a borderline word-tracking call must not be able to end the dialog. Word tracking is the creator's proposal, filtered deterministically in its parse step (see below).
+`ending_check` vaut « se termine par une question » pour les tours normaux et d'ouverture, et « termine la conversation sans poser de question » pour le tour de clôture. `{approval_threshold}` is the threshold configured on the loop (default 70); it appears in both reviewer prompts. The reviewer agents receive the same value and the loop enforces it, so the prompt and the enforcement cannot drift apart. The reviewer does not score `target_words_used`: it is bookkeeping the learner never sees, and a borderline word-tracking call must not be able to end the dialog. Word tracking is the creator's proposal, filtered deterministically in its parse step (see below).
 
 **Topic creator prompt** (built by `build_topic_creator_prompt`, `temperature=0.7`, `max_tokens=250`):
 
 ```
-You prepare the topic of a short French conversation for a learner at level {LEARNER_LEVEL} (CEFR).
-The conversation must let the learner use these target words: {target_words}
+Tu prépares le sujet d'une courte conversation française pour un apprenant de niveau {LEARNER_LEVEL} (CECR).
+La conversation doit permettre à l'apprenant d'utiliser ces mots cibles : {target_words}
 
-Invent a simple, fictional, everyday situation in which every target word comes up
-naturally, and describe it as 2 to 4 sentences in French that a conversation partner
-can use to open and steer the conversation. Address the learner as "tu".
-- The situation is fictional: no real people, real organisations, real places in the
-  news, or real current events.
-- Prefer situations from daily life: family, home, school, work, shopping, travel,
-  weather, holidays, food, health, hobbies.
-- Level {LEARNER_LEVEL}: sentences of at most 15 words, common everyday vocabulary,
-  present tense and passé composé only. No subjunctive, no passé simple, no idioms,
-  no technical or rare words except the target words.
+Invente une situation simple, fictive et quotidienne dans laquelle chaque mot cible apparaît
+naturellement, et décris-la en 2 à 4 phrases en français qu'un partenaire de conversation
+peut utiliser pour ouvrir et diriger la conversation. Tutoie l'apprenant.
+- La situation est fictive : pas de vraies personnes, de vraies organisations, de vrais
+  lieux d'actualité, ni d'événements actuels.
+- Préfère les situations de la vie quotidienne : famille, maison, école, travail, courses,
+  voyages, météo, vacances, nourriture, santé, loisirs.
+- Niveau {LEARNER_LEVEL} : phrases de 15 mots maximum, vocabulaire courant de la vie
+  quotidienne, présent et passé composé uniquement. Pas de subjonctif, pas de passé simple,
+  pas d'idiomes, pas de mots techniques ou rares sauf les mots cibles.
 {reviewer_feedback_block}
 ```
 
@@ -311,24 +312,24 @@ Output schema `DialogTopicOutput`: `topic: str`. `reviewer_feedback_block` follo
 **Topic reviewer prompt** (built by `build_topic_reviewer_prompt`, `temperature=0.3`, `max_tokens=200`):
 
 ```
-You are reviewing the topic of a French conversation for a learner at level {LEARNER_LEVEL}.
-Target words: {target_words}
-Candidate topic: "{topic}"
+Tu examines le sujet d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
+Mots cibles : {target_words}
+Sujet candidat : « {topic} »
 
-Check, in this order:
-1. The topic is French only.
-2. The topic is a fictional everyday situation: no real people, organisations, places
-   in the news, or current events.
-3. The topic is at level {LEARNER_LEVEL}: at most 15 words per sentence, common words,
-   no subjunctive or passé simple, no rare or technical words except the target words.
-4. Every target word has a natural place in a conversation on this topic.
-5. The topic has 2 to 4 sentences.
+Vérifie, dans cet ordre :
+1. Le sujet est en français uniquement.
+2. Le sujet est une situation fictive de la vie quotidienne : pas de vraies personnes,
+   organisations, lieux d'actualité, ni événements actuels.
+3. Le sujet est au niveau {LEARNER_LEVEL} : 15 mots maximum par phrase, mots courants,
+   pas de subjonctif ni de passé simple, pas de mots rares ou techniques sauf les mots cibles.
+4. Chaque mot cible a une place naturelle dans une conversation sur ce sujet.
+5. Le sujet fait 2 à 4 phrases.
 
-Respond with approved (true only if score >= {approval_threshold}), score (0-100) and feedback
-(English, one or two sentences naming what to fix).
+Réponds avec approved (true seulement si score >= {approval_threshold}), score (0-100) et
+feedback (en français, une ou deux phrases indiquant quoi corriger).
 ```
 
-The reviewer output is the shared `ReviewVerdict`. The topic runs through the same `ReviewLoopWorkflow` as turns: reject → creator improves from feedback → review, up to `DIALOG_MAX_TURN_ATTEMPTS`. If the reviewer never approves or every call fails, the topic is "" and the turn creator prompt line for the topic reads "Topic: choose a simple everyday situation in which the target words fit naturally."
+The reviewer output is the shared `ReviewVerdict`. The topic runs through the same `ReviewLoopWorkflow` as turns: reject → creator improves from feedback → review, up to `DIALOG_MAX_TURN_ATTEMPTS`. If the reviewer never approves or every call fails, the topic is "" and the turn creator prompt line for the topic reads « Sujet : choisis une situation simple de la vie quotidienne dans laquelle les mots cibles s'intègrent naturellement. »
 
 **Creator parse-step filtering** (run when the creator parses the model's answer; the context gives it the learner message, so no candidate mutation is needed):
 
@@ -671,7 +672,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
   - [ ] Add the four settings to `config.py` and document them in `INSTRUCTIONS.md` and `specs/tech-stack.md` (settings added; documentation lands with Step 8)
   - [x] Unit tests for `DialogSession` properties (`learner_turn_count`, `words_used`, `words_remaining`)
 - [ ] **Step 2: Prompts and creator agent**
-  - [ ] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`; the creator prompt states that target words are returned exactly as listed, and the closing prompt carries the discarded reply's correction
+  - [ ] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`; the four prompts are written in French, reducing the English content in the prompt (structured-output field names stay English); the creator prompt states that target words are returned exactly as listed, and the closing prompt carries the discarded reply's correction
   - [ ] Add `dialogs/agents/dialog_turn_creator.py` with `DialogTurnOutput` and the creator node (one `generate` call with `response_schema`, `temperature=0.7`, `max_tokens=300`), including the parse-step filtering (word normalisation and membership, correction rules)
   - [ ] Unit tests: prompt contains level, target words, remaining words, history, ending rule per turn kind; creator parses valid JSON and raises `DialogTurnError` on invalid JSON; the word filter keeps listed forms, drops unlisted ones and normalises case and accents (targets `prévenir`/`boire` against "prévient" and "bu")
 - [ ] **Step 3: Generic review loop, reviewer agents**
@@ -684,7 +685,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
   - [ ] Add `start_dialog_session(vocabulary_words, practised_words)` to `LanguageLearnerApplication`
   - [ ] Unit tests: full dialog with `MockLLMClient`, end by turn count, end by all words used (closing turn shown, reply text discarded), end when the reviewer never approves, closing loop failure skips the closing message, blank message rejected, LLM failure leaves session unchanged
 - [ ] **Step 5: Mock LLM**
-  - [ ] Extend `MockLLMClient.generate` to recognise the topic creator prompt (marker "prepare the topic"), the topic reviewer prompt (marker "reviewing the topic"), the turn creator prompt (marker "French conversation partner") and the turn reviewer prompt (marker "reviewing one turn") and return valid JSON for each; make the reviewer verdict overridable via the existing `responses` dict so tests can force a rejection
+  - [ ] Extend `MockLLMClient.generate` to recognise the topic creator prompt (marker "Tu prépares le sujet"), the topic reviewer prompt (marker "Tu examines le sujet"), the turn creator prompt (marker "Tu es un partenaire de conversation") and the turn reviewer prompt (marker "Tu examines un tour") and return valid JSON for each; each marker is a unique substring of its prompt (the turn creator marker needs the "Tu es un" prefix because the topic creator prompt also mentions "partenaire de conversation"); make the reviewer verdict overridable via the existing `responses` dict so tests can force a rejection
 - [ ] **Step 6: UI**
   - [ ] Add `ui/dialog_display.py` using `st.chat_message`, `st.chat_input`, `st.spinner`
   - [ ] In `app.py`: add the practice-mode radio; keep `st.session_state.dialog_player`, `st.session_state.completed_dialogs` and `st.session_state.dialog_words_practised`
@@ -808,7 +809,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 |------|-------------|--------|------------|
 | Wrong or unnecessary correction shown to the learner | Medium | High | Reviewer check 1 scores 0 on any wrong correction, so such a candidate is not approved and never shown; deterministic substring check |
 | Dialog ends early when the reviewer rejects on every attempt of one turn | Medium | Medium | `DIALOG_MAX_TURN_ATTEMPTS` defaults to 2 and the reviewer scores 0 on doubtful corrections; the wrap-up still lists words used and corrections, unpractised words stay available for the next dialog, and the exhaustion is logged as a warning |
-| English leaks into system replies | Medium | Medium | Creator rule, reviewer check 2, integration assertion |
+| English leaks into system replies | Medium | Medium | French prompts (reduced English content in the prompt), creator rule, reviewer check 2, integration assertion |
 | Reply above A2-B1 | Medium | Medium | Explicit tense and sentence-length rules, reviewer check 3 |
 | Dialog topic above A2-B1 or too far from the target words | Medium | Medium | Explicit level and fit rules in the creator prompt; reviewer checks 3 and 4; AC13 and TC18 |
 | Mistral ignores or malforms the JSON schema | Low | High | Strict `json_schema` mode already proven in `AnswerEvaluator`; parse failure raises `DialogTurnError`, learner can resend |
@@ -872,7 +873,7 @@ Three options were considered.
 **Option C: show a neutral fallback line.** A canned French line replaces the rejected turn and the dialog continues. Rejected: it adds a new content path to the chat without solving the rejection, and the dialog still ends on the next exhausted turn.
 
 ### Sub-decision: how the dialog closes when the words run out
-The creator reports `target_words_used` in the same call as the reply, so the dialog only learns that the last words were used after the reply was written under the normal rule "End with one question."
+The creator reports `target_words_used` in the same call as the reply, so the dialog only learns that the last words were used after the reply was written under the normal rule « Termine par une question. »
 
 **Option (a): an extra closing turn (chosen).** Keep the reply's corrections and `target_words_used`, discard its text, and run the loop once more with `is_closing=True`, so a single bubble shows the correction and the goodbye. The turn-count ending is known in advance, so the last learner turn runs with `is_closing=True` directly and needs no extra run; the bound of `DIALOG_MAX_LEARNER_TURNS` + 1 loop runs (28 calls with the defaults) still holds. Chosen: nothing unanswered is shown and the reviewer stays strict. Costs: the last turn takes two loops (about 2× latency behind one spinner), and the closing loop needs failure rules — when it is not approved or its LLM call fails, the closing message is skipped and the wrap-up is shown.
 
