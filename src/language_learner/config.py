@@ -41,6 +41,12 @@ class AppSettings(BaseSettings):
         env="EXERCISE_TYPES",
     )
 
+    # Dialog practice settings
+    dialog_practice_enabled: bool = Field(True, env="DIALOG_PRACTICE_ENABLED")
+    dialog_words_per_dialog: int = Field(4, env="DIALOG_WORDS_PER_DIALOG")
+    dialog_max_learner_turns: int = Field(6, env="DIALOG_MAX_LEARNER_TURNS")
+    dialog_max_turn_attempts: int = Field(2, env="DIALOG_MAX_TURN_ATTEMPTS")
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 

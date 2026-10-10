@@ -634,9 +634,9 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 
 ### Steps
 - [ ] **Step 1: Models and configuration**
-  - [ ] Add `models/dialog.py` with the dataclasses and enums above
+  - [x] Add `models/dialog.py` with the dataclasses and enums above
   - [ ] Add the four settings to `config.py` and document them in `INSTRUCTIONS.md` and `specs/tech-stack.md`
-  - [ ] Unit tests for `DialogSession` properties (`learner_turn_count`, `words_used`, `words_remaining`)
+  - [x] Unit tests for `DialogSession` properties (`learner_turn_count`, `words_used`, `words_remaining`)
 - [ ] **Step 2: Prompts and creator agent**
   - [ ] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`
   - [ ] Add `dialogs/agents/dialog_turn_creator.py` with `DialogTurnOutput` and the creator node (one `generate` call with `response_schema`, `temperature=0.7`, `max_tokens=300`)
@@ -686,7 +686,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 - [ ] AC13: The dialog topic for the words of a manually chosen page is in French, describes a fictional everyday situation, has 2 to 4 sentences of at most 15 words each, uses no subjunctive or passé simple, and gives each target word a natural place in the conversation.
 
 ### Test Cases
-- [ ] TC1 `DialogSession.words_remaining` shrinks as learner turns record `target_words_used`, and never contains a word twice.
+- [x] TC1 `DialogSession.words_remaining` shrinks as learner turns record `target_words_used`, and never contains a word twice.
 - [ ] TC2 `build_creator_prompt` for the opening turn contains the greeting rule and no learner message; for the closing turn contains the closing rule.
 - [ ] TC3 Creator node raises `DialogTurnError` when the LLM returns non-JSON.
 - [ ] TC4 Reviewer drops a correction whose `original` is not in the learner message.
@@ -732,11 +732,11 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 ## Testing Strategy
 
 ### Unit Tests
-- [ ] `tests/test_dialog_models.py`: TC1
+- [x] `tests/test_dialog_models.py`: TC1
 - [ ] `tests/test_dialog_prompts.py`: TC2, TC13
 - [ ] `tests/test_dialog_turn_creator.py`: TC3, JSON parsing
 - [ ] `tests/test_dialog_turn_reviewer.py`: TC4, TC5, TC6
-- [ ] `tests/test_review_loop.py`: TC7, TC8, TC9 with stub creator and reviewer, no LLM
+- [x] `tests/test_review_loop.py`: TC7, TC8, TC9 with stub creator and reviewer, no LLM
 - [ ] `tests/test_dialog_player.py`: TC10, TC11, TC12, TC19, full mock dialog (AC1)
 
 ### Integration Tests

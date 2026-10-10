@@ -21,6 +21,11 @@ class LLMError(LanguageLearnerError):
     pass
 
 
+class DialogTurnError(LLMError):
+    """Raised when a dialog turn cannot be produced or parsed."""
+    pass
+
+
 class ExerciseGenerationError(LanguageLearnerError):
     """Raised when exercise generation fails."""
     pass
