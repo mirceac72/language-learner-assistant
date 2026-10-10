@@ -323,12 +323,12 @@ if st.button("Continue to Next Exercise"):
 ```python
 # Stored in exercise.evaluation
 evaluation = {
-    "score": float,           # 0-100
-    "is_correct": bool,      # True/False
-    "feedback": str,          # User-facing message
-    "correct_answer": str,    # Expected answer
-    "explanation": str,       # Detailed explanation
-    "learning_tips": list[str] # Pedagogical suggestions
+    "score": float,  # 0-100
+    "is_correct": bool,  # True/False
+    "feedback": str,  # User-facing message
+    "correct_answer": str,  # Expected answer
+    "explanation": str,  # Detailed explanation
+    "learning_tips": list[str],  # Pedagogical suggestions
 }
 ```
 

@@ -61,15 +61,15 @@ class VocabularyExtractor:
         headers = {"User-Agent": self.settings.user_agent}
         max_retries = self.settings.web_request_max_retries
         timeout = self.settings.web_request_timeout
-        
+
         last_exception = None
-        
+
         for attempt in range(max_retries + 1):
             try:
-                self.logger.info(f"Fetching web page: {url} (attempt {attempt + 1}/{max_retries + 1})")
-                response = requests.get(
-                    url, headers=headers, timeout=timeout
+                self.logger.info(
+                    f"Fetching web page: {url} (attempt {attempt + 1}/{max_retries + 1})"
                 )
+                response = requests.get(url, headers=headers, timeout=timeout)
                 response.raise_for_status()
                 self.logger.debug(f"Successfully fetched web page: {url}")
                 return response.text
@@ -78,9 +78,12 @@ class VocabularyExtractor:
                 self.logger.warning(
                     f"Error fetching web page {url} (attempt {attempt + 1}/{max_retries + 1}): {e}"
                 )
-                
+
                 # Only retry on transient errors (connection errors, timeouts)
-                if isinstance(e, (requests.ConnectionError, requests.Timeout)) and attempt < max_retries:
+                if (
+                    isinstance(e, (requests.ConnectionError, requests.Timeout))
+                    and attempt < max_retries
+                ):
                     retry_delay = timeout * (attempt + 1)  # Exponential backoff
                     self.logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
@@ -89,8 +92,10 @@ class VocabularyExtractor:
                     # Don't retry for non-transient errors or if we've exhausted retries
                     self.logger.error(f"Failed to fetch web page {url}: {e}")
                     break
-        
-        raise WebFetchError(f"Failed to fetch web page after {max_retries + 1} attempts: {last_exception}") from last_exception
+
+        raise WebFetchError(
+            f"Failed to fetch web page after {max_retries + 1} attempts: {last_exception}"
+        ) from last_exception
 
     def extract_text_from_html(self, html: str) -> str:
         """Extract text content from HTML

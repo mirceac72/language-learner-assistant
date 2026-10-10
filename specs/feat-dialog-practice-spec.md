@@ -194,7 +194,8 @@ The boxes from the creator to the approval decision are the generic `ReviewLoopW
 | Component | Responsibility | Dependencies |
 |-----------|---------------|--------------|
 | `models/dialog.py` | Dataclasses `Correction`, `DialogTurn`, `DialogSession`, `DialogSummary`, enum `DialogRole`, `DialogStatus` | stdlib |
-| `dialogs/dialog_prompts.py` | `LEARNER_LEVEL` constant, `build_creator_prompt(...)`, `build_reviewer_prompt(...)`, `build_wrap_up(session)`; pure functions | `models/dialog.py` |
+| `dialogs/dialog_prompts.py` | `LEARNER_LEVEL` constant, `build_creator_prompt(...)`, `build_reviewer_prompt(...)`, `build_wrap_up(session)`; loads the prompt templates and renders them with placeholder replacement; pure functions | `models/dialog.py`, `dialogs/prompts/*.txt` |
+| `dialogs/prompts/*.txt` | The four LLM prompt templates (`turn_creator.txt`, `turn_reviewer.txt`, `topic_creator.txt`, `topic_reviewer.txt`) with `{placeholder}` markers | none |
 | `core/review_loop.py` | `ReviewLoopWorkflow[C]`: generic LangGraph loop creator → reviewer → improve on feedback, accepting a candidate only with `approved=true` and score ≥ the loop's approval threshold (default `APPROVAL_THRESHOLD`) and ending without an approved candidate when attempts are exhausted; `Creator[C]` and `Reviewer[C]` protocols; `ReviewVerdict`; `ReviewLoopResult[C]` | LangGraph, pydantic |
 | `dialogs/agents/dialog_turn_creator.py` | `DialogTurnCreatorAgent`, a `Creator[DialogTurnOutput]`: produces a candidate turn with structured output, improves it from feedback, and filters the parsed output (word normalisation and membership, correction rules) | `LLMClient`, `dialog_prompts`, pydantic |
 | `dialogs/agents/dialog_turn_reviewer.py` | `DialogTurnReviewerAgent`, a `Reviewer[DialogTurnOutput]`: hard-failure short-circuit (empty or overlong reply, no LLM call), then LLM review returning a `ReviewVerdict` | `LLMClient`, `dialog_prompts`, pydantic |
@@ -204,7 +205,7 @@ The boxes from the creator to the approval decision are the generic `ReviewLoopW
 | `core/application.py` | Builds the agents and the two loops, passing the same approval threshold (default 70) to each loop and its reviewer agent; `start_dialog_session(vocabulary_words, practised_words)` selects the first unpractised target words, runs the topic loop, returns a `DialogPlayer` | `ReviewLoopWorkflow`, topic agents, `DialogPlayer`, `config` |
 | `ui/dialog_display.py` | `display_dialog(player)`: renders history, corrections, spinner, wrap-up, "new dialog" button | Streamlit, `DialogPlayer` |
 | `app.py` | Practice-mode selector; keeps the dialog player, practised words and completed dialogs in `st.session_state`; adds a completed dialog's `words_used` to `dialog_words_practised` | UI modules |
-| `core/mock_llm.py` | Returns valid JSON for creator and reviewer prompts | none |
+| `core/mock_llm.py` | Returns valid JSON for creator and reviewer prompts; matches the dialog prompts on the shared marker constants | `dialogs/dialog_prompts` |
 | `config.py` | `dialog_practice_enabled`, `dialog_words_per_dialog`, `dialog_max_learner_turns`, `dialog_max_turn_attempts` | pydantic-settings |
 
 ### Data Flow
@@ -219,12 +220,13 @@ The boxes from the creator to the approval decision are the generic `ReviewLoopW
 
 The prompt instructions are written in French; this reduces the English content in the prompt and the risk of English leaking into learner-facing text. The learner-facing text they produce is intended to be French. Structured-output field names (`approved`, `score`, `feedback`, `reply`, `corrections`, `original`, `corrected`, `explanation`, `target_words_used`, `topic`) stay English; only the instructions around them are French.
 
+The four LLM prompt templates are stored in `dialogs/prompts/*.txt`; `dialog_prompts` loads them and replaces `{placeholder}` markers (a line that is exactly `{name}` is a block placeholder: the value's lines, or nothing when empty; other occurrences are replaced inline). The `{..._MARKER}` placeholders are the marker constants, so the mock's prompt matching cannot drift from the template text. The templates below are the content of those files.
+
 **Creator prompt** (built by `build_creator_prompt`):
 
 ```
-Tu es un partenaire de conversation français sympathique pour un apprenant de niveau {LEARNER_LEVEL} (CECR).
-Sujet de la conversation :
-{dialog_topic}
+{TURN_CREATOR_MARKER} français sympathique pour un apprenant de niveau {LEARNER_LEVEL} (CECR).
+{topic_block}
 
 Mots cibles que l'apprenant doit pratiquer : {target_words}
 Mots cibles pas encore utilisés : {words_remaining}
@@ -235,9 +237,7 @@ Règles pour ta réponse :
   passé composé et futur proche. Pas de subjonctif, pas de passé simple, pas d'idiomes.
   Les mots cibles sont la seule exception.
 - 2 à 4 phrases. {ending_rule}
-- Utilise un des mots pas encore utilisés, ou pose une question qui invite l'apprenant à l'utiliser.
-- Si l'apprenant a écrit en anglais, répondu par un seul mot ou est hors sujet : réponds
-  brièvement, ne corrige pas, et pose une question qui ramène un mot pas encore utilisé.
+{question_rules}
 
 Règles pour les corrections (champ « corrections ») :
 - Cherche les erreurs dans le dernier message de l'apprenant uniquement : mauvais mot,
@@ -248,6 +248,7 @@ Règles pour les corrections (champ « corrections ») :
 - Ne liste pas les autres erreurs. Réutilise plutôt leur forme correcte naturellement dans ta réponse.
 - S'il n'y a pas d'erreur, « corrections » est une liste vide. N'invente jamais d'erreur.
 {carried_correction_block}
+
 Champ « target_words_used » : les mots cibles que l'apprenant a utilisés dans le dernier
 message, sous n'importe quelle forme fléchie, chacun rapporté exactement comme listé dans
 les mots cibles (jamais la forme de l'apprenant). Un mot compte même si son emploi a été
@@ -256,17 +257,16 @@ si aucun.
 
 Conversation jusqu'ici :
 {history}
-
-Dernier message de l'apprenant : « {learner_message} »
+{learner_message_block}
 {reviewer_feedback_block}
 ```
 
-`ending_rule` vaut « Termine par une question. » pour les tours normaux, « Commence la conversation par une salutation et une question. » pour le tour d'ouverture, et « Termine la conversation chaleureusement. Ne pose pas de question. » pour le tour de clôture. `carried_correction_block` est vide, sauf sur un tour de clôture qui répond à un message de l'apprenant (les mots sont épuisés), où il vaut « Correction à montrer d'abord : {original} → {corrected} : {explanation}. » `reviewer_feedback_block` est vide à la première tentative. Aux tentatives suivantes, il vaut « Un relecteur a rejeté ta réponse précédente. Réponse précédente : {previous_reply}. Corrections précédentes : {previous_corrections}. Commentaire du relecteur : {feedback}. Analyse le commentaire, garde ce qui était juste, corrige ce qui était faux, et produis une réponse améliorée. »
+`{topic_block}` vaut « Sujet de la conversation : » suivi du sujet approuvé, ou la ligne générique `GENERIC_TOPIC_LINE` quand aucun sujet n'a été approuvé. `ending_rule` vaut « Termine par une question. » pour les tours normaux, « Commence la conversation par une salutation et une question. » pour le tour d'ouverture, et « Termine la conversation chaleureusement. Ne pose pas de question. » pour le tour de clôture. `question_rules` vaut les deux règles « Utilise un des mots pas encore utilisés, ou pose une question qui invite l'apprenant à l'utiliser. » et « Si l'apprenant a écrit en anglais, répondu par un seul mot ou est hors sujet : réponds brièvement, ne corrige pas, et pose une question qui ramène un mot pas encore utilisé. » sur les tours normaux et d'ouverture ; il est vide sur un tour de clôture, où ces deux règles contrediraient « Ne pose pas de question ». Quand `{words_remaining}` est vide, la ligne affiche « aucun » (comme dans le wrap-up). `carried_correction_block` est vide, sauf sur un tour de clôture qui répond à un message de l'apprenant (les mots sont épuisés), où il vaut « Correction à montrer d'abord : {original} → {corrected} : {explanation}. Ne la remets pas dans « corrections » : ce champ doit être une liste vide. » : la correction portée est déjà montrée à l'apprenant, donc le créateur renvoie `corrections: []` sur ce tour (l'étape de filtrage du parseur écarte toutes les corrections dans ce cas, voir le tableau ci-dessous). `learner_message_block` vaut une ligne vide suivie de « Dernier message de l'apprenant : « {learner_message} » » quand il y a un message de l'apprenant, et est vide au tour d'ouverture. `reviewer_feedback_block` est vide à la première tentative. Aux tentatives suivantes, il vaut « Un relecteur a rejeté ta réponse précédente. Réponse précédente : {previous_reply}. Corrections précédentes : {previous_corrections}. Commentaire du relecteur : {feedback}. Analyse le commentaire, garde ce qui était juste, corrige ce qui était faux, et produis une réponse améliorée. » La ponctuation finale de `{explanation}`, `{previous_reply}`, `{previous_topic}` et `{feedback}` est retirée avant le point ajouté, pour ne jamais doubler la ponctuation.
 
 **Reviewer prompt** (built by `build_reviewer_prompt`):
 
 ```
-Tu examines un tour d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
+{TURN_REVIEWER_MARKER} d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
 
 Dernier message de l'apprenant : « {learner_message} »
 Mots cibles : {target_words}. Pas encore utilisés avant ce tour : {words_remaining}
@@ -286,12 +286,12 @@ Réponds avec approved (true seulement si score >= {approval_threshold} et la v�
 est passée), score (0-100) et feedback (en français, une ou deux phrases indiquant quoi corriger).
 ```
 
-`ending_check` vaut « se termine par une question » pour les tours normaux et d'ouverture, et « termine la conversation sans poser de question » pour le tour de clôture. `{approval_threshold}` is the threshold configured on the loop (default 70); it appears in both reviewer prompts. The reviewer agents receive the same value and the loop enforces it, so the prompt and the enforcement cannot drift apart. The reviewer does not score `target_words_used`: it is bookkeeping the learner never sees, and a borderline word-tracking call must not be able to end the dialog. Word tracking is the creator's proposal, filtered deterministically in its parse step (see below).
+`ending_check` vaut « se termine par une question » pour les tours normaux et d'ouverture, et « termine la conversation sans poser de question » pour le tour de clôture. `{learner_message}` vaut « (aucun) » au tour d'ouverture. Quand `{words_remaining}` est vide, la fin de la ligne affiche « aucun ». `{approval_threshold}` is the threshold configured on the loop (default 70); it appears in both reviewer prompts. The reviewer agents receive the same value and the loop enforces it, so the prompt and the enforcement cannot drift apart. The reviewer does not score `target_words_used`: it is bookkeeping the learner never sees, and a borderline word-tracking call must not be able to end the dialog. Word tracking is the creator's proposal, filtered deterministically in its parse step (see below).
 
 **Topic creator prompt** (built by `build_topic_creator_prompt`, `temperature=0.7`, `max_tokens=250`):
 
 ```
-Tu prépares le sujet d'une courte conversation française pour un apprenant de niveau {LEARNER_LEVEL} (CECR).
+{TOPIC_CREATOR_MARKER} d'une courte conversation française pour un apprenant de niveau {LEARNER_LEVEL} (CECR).
 La conversation doit permettre à l'apprenant d'utiliser ces mots cibles : {target_words}
 
 Invente une situation simple, fictive et quotidienne dans laquelle chaque mot cible apparaît
@@ -312,7 +312,7 @@ Output schema `DialogTopicOutput`: `topic: str`. `reviewer_feedback_block` follo
 **Topic reviewer prompt** (built by `build_topic_reviewer_prompt`, `temperature=0.3`, `max_tokens=200`):
 
 ```
-Tu examines le sujet d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
+{TOPIC_REVIEWER_MARKER} d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
 Mots cibles : {target_words}
 Sujet candidat : « {topic} »
 
@@ -340,6 +340,7 @@ The reviewer output is the shared `ReviewVerdict`. The topic runs through the sa
 | More than one correction | Keep the first, drop the rest |
 | Opening turn has corrections | Drop all corrections |
 | Closing turn | Corrections are allowed only for the learner message it answers (the rules above apply) |
+| Closing turn carrying a correction (the discarded reply's correction is shown first) | Drop all corrections: the carried correction is already shown, so `corrections` must be empty |
 
 Whether the learner's inflected form counts as a use of a target is the creator's judgment; there is no prefix-matching rule, because irregular forms (prévenir → prévient, boire → bu) share no five-character prefix with their dictionary form.
 
@@ -405,7 +406,9 @@ When the dialog completes, the wrap-up is shown as a final system message and a 
 ```python
 # dialogs/dialog_player.py
 class DialogPlayer:
-    def __init__(self, session: DialogSession, turn_loop: ReviewLoopWorkflow[DialogTurnOutput]) -> None: ...
+    def __init__(
+        self, session: DialogSession, turn_loop: ReviewLoopWorkflow[DialogTurnOutput]
+    ) -> None: ...
 
     def open(self) -> DialogTurn | None:
         """Run the opening system turn. Returns None when the reviewer does not
@@ -441,43 +444,46 @@ def create_dialog_topic(self, target_words: list[str]) -> str:
 
 
 # core/review_loop.py  (generic, reusable by any generated content)
-C = TypeVar("C")
-C_contra = TypeVar("C_contra", contravariant=True)
-
-APPROVAL_THRESHOLD = 70   # default approval bar; ReviewLoopWorkflow takes approval_threshold to override it per content type
+APPROVAL_THRESHOLD = 70  # default approval bar; ReviewLoopWorkflow takes approval_threshold to override it per content type
 
 
 class ReviewVerdict(BaseModel):
     """Reviewer output. Also the JSON schema handed to LLM reviewers."""
+
     model_config = ConfigDict(extra="forbid")
     approved: bool
     score: int = Field(..., ge=0, le=100)
     feedback: str
 
 
-class Creator(Protocol[C]):
+class Creator[C](Protocol):
     def create(self, context: Any, previous: C | None, feedback: str | None) -> C:
         """First attempt: previous and feedback are None. Later attempts: improve
         `previous` using the reviewer `feedback`. Raises on LLM failure."""
 
 
-class Reviewer(Protocol[C_contra]):
+class Reviewer[C_contra](Protocol):
     def review(self, context: Any, candidate: C_contra) -> ReviewVerdict:
         """May run deterministic checks first and skip the LLM on a hard failure."""
 
 
 @dataclass
-class ReviewLoopResult(Generic[C]):
-    candidate: C | None                         # None when no candidate was approved
-    verdict: ReviewVerdict | None               # None together with candidate
+class ReviewLoopResult[C]:
+    candidate: C | None  # None when no candidate was approved
+    verdict: ReviewVerdict | None  # None together with candidate
     attempts: int
-    approved: bool                              # False when the attempt limit was reached without approval
-    candidates: list[tuple[C, ReviewVerdict]]   # every attempt, in order
+    approved: bool  # False when the attempt limit was reached without approval
+    candidates: list[tuple[C, ReviewVerdict]]  # every attempt, in order
 
 
-class ReviewLoopWorkflow(Generic[C]):
-    def __init__(self, creator: Creator[C], reviewer: Reviewer[C], max_attempts: int = 2,
-                 approval_threshold: int = APPROVAL_THRESHOLD) -> None: ...
+class ReviewLoopWorkflow[C]:
+    def __init__(
+        self,
+        creator: Creator[C],
+        reviewer: Reviewer[C],
+        max_attempts: int = 2,
+        approval_threshold: int = APPROVAL_THRESHOLD,
+    ) -> None: ...
 
     def run(self, context: Any) -> ReviewLoopResult[C]:
         """LangGraph StateGraph: creator → reviewer → (approved with score >=
@@ -489,24 +495,32 @@ class ReviewLoopWorkflow(Generic[C]):
 @dataclass
 class DialogTurnContext:
     session: DialogSession
-    learner_message: str | None      # None means opening turn
+    learner_message: str | None  # None means opening turn
     is_closing: bool
-    carried_corrections: list[Correction] = field(default_factory=list)   # closing turn only: the discarded reply's corrections
+    carried_corrections: list[Correction] = field(
+        default_factory=list
+    )  # closing turn only: the discarded reply's corrections
 
 
-class DialogTurnCreatorAgent:        # implements Creator[DialogTurnOutput]
+class DialogTurnCreatorAgent:  # implements Creator[DialogTurnOutput]
     def __init__(self, llm_client: LLMClient) -> None: ...
-    def create(self, context: DialogTurnContext, previous: DialogTurnOutput | None,
-               feedback: str | None) -> DialogTurnOutput:
+    def create(
+        self,
+        context: DialogTurnContext,
+        previous: DialogTurnOutput | None,
+        feedback: str | None,
+    ) -> DialogTurnOutput:
         """One LLM call with structured output, then parse-step filtering of the
         parsed candidate (word normalisation and membership, correction rules).
         Raises DialogTurnError on invalid JSON."""
 
 
 # dialogs/agents/dialog_turn_reviewer.py
-class DialogTurnReviewerAgent:       # implements Reviewer[DialogTurnOutput]
+class DialogTurnReviewerAgent:  # implements Reviewer[DialogTurnOutput]
     def __init__(self, llm_client: LLMClient, approval_threshold: int = 70) -> None: ...
-    def review(self, context: DialogTurnContext, candidate: DialogTurnOutput) -> ReviewVerdict:
+    def review(
+        self, context: DialogTurnContext, candidate: DialogTurnOutput
+    ) -> ReviewVerdict:
         """Hard-failure short-circuit (empty or overlong reply, no LLM call), then
         one LLM review call. Does not score `target_words_used`."""
 
@@ -517,7 +531,10 @@ class DialogTurnReviewerAgent:       # implements Reviewer[DialogTurnOutput]
 
 
 # dialogs/dialog_prompts.py
+# The four LLM prompt templates live in dialogs/prompts/*.txt; the builders
+# load and render them with placeholder replacement (see Prompt design).
 LEARNER_LEVEL = "A2-B1"
+
 
 def build_creator_prompt(
     session: DialogSession,
@@ -525,7 +542,10 @@ def build_creator_prompt(
     is_closing: bool,
     reviewer_feedback: str | None = None,
     carried_corrections: list[Correction] | None = None,
+    previous_reply: str | None = None,
+    previous_corrections: list[Correction] | None = None,
 ) -> str: ...
+
 
 def build_reviewer_prompt(
     session: DialogSession,
@@ -535,11 +555,16 @@ def build_reviewer_prompt(
     approval_threshold: int = 70,
 ) -> str: ...
 
+
 def build_wrap_up(session: DialogSession) -> str: ...
 
+
 def build_topic_creator_prompt(
-    target_words: list[str], reviewer_feedback: str | None = None
+    target_words: list[str],
+    reviewer_feedback: str | None = None,
+    previous_topic: str | None = None,
 ) -> str: ...
+
 
 def build_topic_reviewer_prompt(
     target_words: list[str], candidate: DialogTopicOutput, approval_threshold: int = 70
@@ -572,25 +597,25 @@ class DialogStatus(Enum):
 
 @dataclass
 class Correction:
-    original: str       # exact substring of the learner message
+    original: str  # exact substring of the learner message
     corrected: str
-    explanation: str    # French, at most 20 words
+    explanation: str  # French, at most 20 words
 
 
 @dataclass
 class DialogTurn:
     role: DialogRole
     text: str
-    corrections: list[Correction] = field(default_factory=list)   # system turns only
-    target_words_used: list[str] = field(default_factory=list)    # learner turns only
-    review_score: int | None = None                               # system turns only
+    corrections: list[Correction] = field(default_factory=list)  # system turns only
+    target_words_used: list[str] = field(default_factory=list)  # learner turns only
+    review_score: int | None = None  # system turns only
 
 
 @dataclass
 class DialogSession:
     dialog_id: str
     target_words: list[str]
-    dialog_topic: str           # fictional, model-written, reviewed
+    dialog_topic: str  # fictional, model-written, reviewed
     max_learner_turns: int
     turns: list[DialogTurn] = field(default_factory=list)
     status: DialogStatus = DialogStatus.IN_PROGRESS
@@ -600,7 +625,7 @@ class DialogSession:
     @property
     def learner_turn_count(self) -> int: ...
     @property
-    def words_used(self) -> list[str]: ...        # order of first use
+    def words_used(self) -> list[str]: ...  # order of first use
     @property
     def words_remaining(self) -> list[str]: ...
 
@@ -645,7 +670,9 @@ class ReviewLoopState(TypedDict):
     context: Any
     candidate: Any | None
     verdict: ReviewVerdict | None
-    candidates: Annotated[list[tuple[Any, ReviewVerdict]], add]   # every attempt, in order
+    candidates: Annotated[
+        list[tuple[Any, ReviewVerdict]], add
+    ]  # every attempt, in order
     attempt: int
 ```
 
@@ -672,7 +699,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
   - [ ] Add the four settings to `config.py` and document them in `INSTRUCTIONS.md` and `specs/tech-stack.md` (settings added; documentation lands with Step 8)
   - [x] Unit tests for `DialogSession` properties (`learner_turn_count`, `words_used`, `words_remaining`)
 - [ ] **Step 2: Prompts and creator agent**
-  - [ ] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`; the four prompts are written in French, reducing the English content in the prompt (structured-output field names stay English); the creator prompt states that target words are returned exactly as listed, and the closing prompt carries the discarded reply's correction
+  - [x] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`; the four prompts are written in French, reducing the English content in the prompt (structured-output field names stay English); the creator prompt states that target words are returned exactly as listed, and the closing prompt carries the discarded reply's correction
   - [ ] Add `dialogs/agents/dialog_turn_creator.py` with `DialogTurnOutput` and the creator node (one `generate` call with `response_schema`, `temperature=0.7`, `max_tokens=300`), including the parse-step filtering (word normalisation and membership, correction rules)
   - [ ] Unit tests: prompt contains level, target words, remaining words, history, ending rule per turn kind; creator parses valid JSON and raises `DialogTurnError` on invalid JSON; the word filter keeps listed forms, drops unlisted ones and normalises case and accents (targets `prévenir`/`boire` against "prévient" and "bu")
 - [ ] **Step 3: Generic review loop, reviewer agents**
@@ -685,7 +712,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
   - [ ] Add `start_dialog_session(vocabulary_words, practised_words)` to `LanguageLearnerApplication`
   - [ ] Unit tests: full dialog with `MockLLMClient`, end by turn count, end by all words used (closing turn shown, reply text discarded), end when the reviewer never approves, closing loop failure skips the closing message, blank message rejected, LLM failure leaves session unchanged
 - [ ] **Step 5: Mock LLM**
-  - [ ] Extend `MockLLMClient.generate` to recognise the topic creator prompt (marker "Tu prépares le sujet"), the topic reviewer prompt (marker "Tu examines le sujet"), the turn creator prompt (marker "Tu es un partenaire de conversation") and the turn reviewer prompt (marker "Tu examines un tour") and return valid JSON for each; each marker is a unique substring of its prompt (the turn creator marker needs the "Tu es un" prefix because the topic creator prompt also mentions "partenaire de conversation"); make the reviewer verdict overridable via the existing `responses` dict so tests can force a rejection
+  - [x] Extend `MockLLMClient.generate` to recognise the topic creator prompt (marker "Tu prépares le sujet"), the topic reviewer prompt (marker "Tu examines le sujet"), the turn creator prompt (marker "Tu es un partenaire de conversation") and the turn reviewer prompt (marker "Tu examines un tour") and return valid JSON for each; each marker is a unique substring of its prompt (the turn creator marker needs the "Tu es un" prefix because the topic creator prompt also mentions "partenaire de conversation"); make the reviewer verdict overridable via the existing `responses` dict so tests can force a rejection
 - [ ] **Step 6: UI**
   - [ ] Add `ui/dialog_display.py` using `st.chat_message`, `st.chat_input`, `st.spinner`
   - [ ] In `app.py`: add the practice-mode radio; keep `st.session_state.dialog_player`, `st.session_state.completed_dialogs` and `st.session_state.dialog_words_practised`
@@ -722,7 +749,8 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 
 ### Test Cases
 - [x] TC1 `DialogSession.words_remaining` shrinks as learner turns record `target_words_used`, and never contains a word twice.
-- [ ] TC2 `build_creator_prompt` for the opening turn contains the greeting rule and no learner message; for the closing turn contains the closing rule.
+- [x] TC2 `build_creator_prompt` for the opening turn contains the greeting rule and no learner message; for the closing turn contains the closing rule.
+- [x] TC21 The four LLM prompt templates are stored in `dialogs/prompts/*.txt`; the builders load them with `importlib.resources` and replace `{placeholder}` markers (a line that is exactly `{name}` is a block placeholder, replaced by the value's lines or dropped when empty).
 - [ ] TC3 Creator node raises `DialogTurnError` when the LLM returns non-JSON.
 - [ ] TC4 Creator parse step drops a correction whose `original` is not in the learner message.
 - [ ] TC5 Creator parse step keeps only the first of two corrections.
@@ -734,9 +762,9 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 - [ ] TC10 Player refuses a blank message and a message after completion.
 - [ ] TC11 Player leaves the session unchanged when the turn loop raises.
 - [ ] TC12 `start_dialog_session` takes exactly `dialog_words_per_dialog` words and fewer when fewer unpractised words remain.
-- [ ] TC13 `build_wrap_up` lists every correction and both word lists.
+- [x] TC13 `build_wrap_up` lists every correction and both word lists.
 - [ ] TC15 `create_dialog_topic` returns "" on LLM error or when the topic is not approved, and `build_creator_prompt` falls back to the generic topic line when the topic is empty.
-- [ ] TC16 `build_topic_creator_prompt` contains the level constant, every target word, the sentence-length limit and the fictional-situation rule; `build_topic_reviewer_prompt` contains every target word and the fit check.
+- [x] TC16 `build_topic_creator_prompt` contains the level constant, every target word, the sentence-length limit and the fictional-situation rule; `build_topic_reviewer_prompt` contains every target word and the fit check.
 - [ ] TC17 Topic loop end to end with `MockLLMClient`: approved topic returned; "" returned when the LLM raises or the reviewer never approves.
 - [ ] TC18 Integration: the topic for 4 fixed target words has 2 to 4 sentences, none longer than 15 words, and the reviewer approves it.
 - [ ] TC14 Integration: AC3, AC4, AC5, AC14 against Mistral, marked `integration`.
@@ -752,7 +780,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 - [ ] Configuration: `config.py`
 - [ ] Practice UI: `app.py` (`specs/feat-ui-practice-phase-spec.md`)
 - [ ] Review phase: consumes `completed_dialogs` (`specs/feat-ui-review-phase-spec.md`)
-- [ ] Exercise generation spec, Stage 3 (external prompts): when `PromptLoader` lands, the builders in `dialog_prompts.py` should read their templates from `prompts/dialog/`. Not a blocker.
+- [ ] Exercise generation spec, Stage 3 (external prompts): the dialog builders already read their templates from `dialogs/prompts/*.txt`; when `PromptLoader` lands, it should serve those templates (and the exercise prompts from `prompts/dialog/`). Not a blocker.
 
 ### External Dependencies
 - [ ] `streamlit` 1.55.0: `st.chat_message`, `st.chat_input` (available since 1.24)
@@ -769,7 +797,7 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 
 ### Unit Tests
 - [x] `tests/test_dialog_models.py`: TC1
-- [ ] `tests/test_dialog_prompts.py`: TC2, TC13
+- [x] `tests/test_dialog_prompts.py`: TC2, TC13, TC16
 - [ ] `tests/test_dialog_turn_creator.py`: TC3, JSON parsing, TC4, TC5, TC6, TC20 (parse-step filtering)
 - [ ] `tests/test_dialog_turn_reviewer.py`: hard-failure short-circuit (empty or overlong reply, no LLM call)
 - [x] `tests/test_review_loop.py`: TC7, TC8, TC9 with stub creator and reviewer, no LLM

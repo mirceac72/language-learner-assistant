@@ -16,6 +16,7 @@ logger.setLevel(logging.INFO)
 
 class ExerciseCreatorState(TypedDict):
     """State for exercise creator agent"""
+
     vocabulary_words: list[str]
     generated_exercises: list[Exercise]
     iteration: int
@@ -45,19 +46,25 @@ class ExerciseCreatorAgent:
             generated_exercises = state.get("generated_exercises", [])
             iteration = state.get("iteration", 1)
 
-            logger.info(f"Creator node started with {len(vocabulary_words)} words, iteration {iteration}")
+            logger.info(
+                f"Creator node started with {len(vocabulary_words)} words, iteration {iteration}"
+            )
 
             # Generate exercises for ALL vocabulary words
             for word in vocabulary_words:
                 # Generate 2-3 exercises per word
                 exercises_to_generate = 2 if iteration == 1 else 1
-                logger.info(f"Generating {exercises_to_generate} exercises for word: {word}")
+                logger.info(
+                    f"Generating {exercises_to_generate} exercises for word: {word}"
+                )
 
                 for _ in range(exercises_to_generate):
                     exercise = self._generate_single_exercise(word, iteration)
                     if exercise:
                         generated_exercises.append(exercise)
-                        logger.info(f"Generated exercise: {exercise.exercise_type.value} for word {word}")
+                        logger.info(
+                            f"Generated exercise: {exercise.exercise_type.value} for word {word}"
+                        )
 
             # Update state
             new_state = {
@@ -70,7 +77,9 @@ class ExerciseCreatorAgent:
 
         return creator_node
 
-    def _generate_single_exercise(self, word: str, iteration: int = 1) -> Exercise | None:
+    def _generate_single_exercise(
+        self, word: str, iteration: int = 1
+    ) -> Exercise | None:
         """Generate a single exercise for a vocabulary word.
 
         Args:
@@ -90,13 +99,19 @@ class ExerciseCreatorAgent:
         elif exercise_type == ExerciseType.TRANSLATION:
             return self._generate_translation_exercise(word, iteration)
         elif exercise_type == ExerciseType.SENTENCE_CONSTRUCTION:
-            logger.warning(f"SENTENCE_CONSTRUCTION exercise type selected but not fully implemented, falling back to FILL_BLANK")
+            logger.warning(
+                "SENTENCE_CONSTRUCTION exercise type selected but not fully implemented, falling back to FILL_BLANK"
+            )
             return self._generate_fill_blank_exercise(word, iteration)
         elif exercise_type == ExerciseType.WORD_MATCHING:
-            logger.warning(f"WORD_MATCHING exercise type selected but not fully implemented, falling back to FILL_BLANK")
+            logger.warning(
+                "WORD_MATCHING exercise type selected but not fully implemented, falling back to FILL_BLANK"
+            )
             return self._generate_fill_blank_exercise(word, iteration)
         else:
-            logger.warning(f"Unknown exercise type {exercise_type}, falling back to FILL_BLANK")
+            logger.warning(
+                f"Unknown exercise type {exercise_type}, falling back to FILL_BLANK"
+            )
             return self._generate_fill_blank_exercise(word, iteration)
 
     def _get_allowed_exercise_types(self) -> list[ExerciseType]:
@@ -107,7 +122,7 @@ class ExerciseCreatorAgent:
         """
         settings = get_settings()
         allowed_types_str = settings.exercise_types
-        
+
         # Parse comma-separated string and convert to ExerciseType enums
         allowed_types = []
         for type_str in allowed_types_str.split(","):
@@ -115,13 +130,17 @@ class ExerciseCreatorAgent:
             try:
                 allowed_types.append(ExerciseType(type_str))
             except ValueError:
-                logger.warning(f"Unknown exercise type '{type_str}' in EXERCISE_TYPES config, skipping")
-        
+                logger.warning(
+                    f"Unknown exercise type '{type_str}' in EXERCISE_TYPES config, skipping"
+                )
+
         # If no valid types found, return all available types
         if not allowed_types:
-            logger.warning("No valid exercise types found in EXERCISE_TYPES config, using all types")
+            logger.warning(
+                "No valid exercise types found in EXERCISE_TYPES config, using all types"
+            )
             return list(ExerciseType)
-        
+
         return allowed_types
 
     def _choose_exercise_type(self, iteration: int = 1) -> ExerciseType:
@@ -136,7 +155,9 @@ class ExerciseCreatorAgent:
         allowed_types = self._get_allowed_exercise_types()
         return random.choice(allowed_types)
 
-    def _generate_fill_blank_exercise(self, word: str, iteration: int = 1) -> Exercise | None:
+    def _generate_fill_blank_exercise(
+        self, word: str, iteration: int = 1
+    ) -> Exercise | None:
         """Generate fill-in-the-blank exercise.
 
         Args:
@@ -151,7 +172,7 @@ Provide ONLY the sentence with the word missing (use ___), the correct answer, a
 Use EXACTLY this format: sentence|correct_answer|translation
 Example: J'aime manger des ___.|pommes|I like to eat apples.
 
-Iteration {iteration}: Focus on creating {'more challenging' if iteration > 1 else 'varied'} exercises."""
+Iteration {iteration}: Focus on creating {"more challenging" if iteration > 1 else "varied"} exercises."""
 
         try:
             response = self.llm.generate(prompt, temperature=0.8, max_tokens=100)
@@ -170,7 +191,9 @@ Iteration {iteration}: Focus on creating {'more challenging' if iteration > 1 el
 
         return None
 
-    def _generate_multiple_choice_exercise(self, word: str, iteration: int = 1) -> Exercise | None:
+    def _generate_multiple_choice_exercise(
+        self, word: str, iteration: int = 1
+    ) -> Exercise | None:
         """Generate multiple choice exercise.
 
         Args:
@@ -185,7 +208,7 @@ Provide ONLY the question, correct answer, and 3 incorrect options.
 Use EXACTLY this format: question|correct_answer|option1|option2|option3
 Example: What does 'pomme' mean?|apple|fruit|red|tree
 
-Iteration {iteration}: Focus on creating {'more challenging' if iteration > 1 else 'clear'} questions."""
+Iteration {iteration}: Focus on creating {"more challenging" if iteration > 1 else "clear"} questions."""
 
         try:
             response = self.llm.generate(prompt, temperature=0.8, max_tokens=100)
@@ -213,7 +236,9 @@ Iteration {iteration}: Focus on creating {'more challenging' if iteration > 1 el
 
         return None
 
-    def _generate_translation_exercise(self, word: str, iteration: int = 1) -> Exercise | None:
+    def _generate_translation_exercise(
+        self, word: str, iteration: int = 1
+    ) -> Exercise | None:
         """Generate translation exercise.
 
         Args:
@@ -227,16 +252,20 @@ Iteration {iteration}: Focus on creating {'more challenging' if iteration > 1 el
         sentence_prompt = f"""Create a natural French sentence that uses the word "{word}".
 Provide ONLY the French sentence.
 
-Iteration {iteration}: Focus on creating {'more complex' if iteration > 1 else 'natural'} sentences."""
+Iteration {iteration}: Focus on creating {"more complex" if iteration > 1 else "natural"} sentences."""
 
         try:
-            french_sentence = self.llm.generate(sentence_prompt, temperature=0.7, max_tokens=80).strip()
+            french_sentence = self.llm.generate(
+                sentence_prompt, temperature=0.7, max_tokens=80
+            ).strip()
 
             # Second LLM call: Translate the French sentence to English
             translation_prompt = f"""Translate the following French sentence to English: {french_sentence}
 Provide ONLY the English translation."""
 
-            english_translation = self.llm.generate(translation_prompt, temperature=0.3, max_tokens=80).strip()
+            english_translation = self.llm.generate(
+                translation_prompt, temperature=0.3, max_tokens=80
+            ).strip()
 
             if french_sentence and english_translation:
                 return Exercise(

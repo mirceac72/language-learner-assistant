@@ -225,27 +225,28 @@ Example: ["word1", "word2"]
 ```python
 def get_named_entities(self, text: str) -> set[str]:
     """Extract named entities from text using multi-stage approach with guardrails.
-    
+
     Args:
         text: Original text to process
-        
+
     Returns:
         Set of named entity words to filter out (lowercase)
-        
+
     Raises:
         None - returns empty set on complete failure
     """
     pass
 
+
 def get_named_entities_detailed(self, text: str) -> list[EntityResult]:
     """Extract named entities with full details for debugging/analysis.
-    
+
     Args:
         text: Original text to process
-        
+
     Returns:
         List of EntityResult objects with text, label, confidence, source
-        
+
     Raises:
         None
     """
@@ -262,6 +263,7 @@ from typing import Literal
 
 class EntityLabel(Enum):
     """Standard entity type labels."""
+
     PERSON = "PER"
     LOCATION = "LOC"
     ORGANIZATION = "ORG"
@@ -276,6 +278,7 @@ class EntityLabel(Enum):
 
 class EntitySource(Enum):
     """Source of entity detection."""
+
     SPACY = "spacy"
     LLM = "llm"
     BOTH = "both"
@@ -284,6 +287,7 @@ class EntitySource(Enum):
 @dataclass
 class EntityResult:
     """Represents a detected entity with metadata."""
+
     text: str
     label: EntityLabel
     confidence: float  # 0.0 to 1.0
@@ -296,26 +300,39 @@ class EntityResult:
 @dataclass
 class GuardrailsConfig:
     """Configuration for content guardrails."""
+
     enabled: bool = True
     sensitivity: Literal["low", "medium", "high"] = "medium"
     custom_blacklist: set[str] = field(default_factory=set)
-    blacklist_categories: set[str] = field(default_factory=lambda: {
-        "insults", "profanity", "hate_speech", "violence", "sexual_content"
-    })
+    blacklist_categories: set[str] = field(
+        default_factory=lambda: {
+            "insults",
+            "profanity",
+            "hate_speech",
+            "violence",
+            "sexual_content",
+        }
+    )
 
 
 @dataclass
 class NERConfig:
     """Configuration for enhanced NER."""
+
     use_llm: bool = True
     use_spacy: bool = True
     min_confidence: float = 0.5
     llm_timeout: int = 30
     merge_strategy: Literal["union", "intersection", "weighted"] = "weighted"
-    entity_types: set[EntityLabel] = field(default_factory=lambda: {
-        EntityLabel.PERSON, EntityLabel.LOCATION, EntityLabel.ORGANIZATION,
-        EntityLabel.GPE, EntityLabel.FACILITY
-    })
+    entity_types: set[EntityLabel] = field(
+        default_factory=lambda: {
+            EntityLabel.PERSON,
+            EntityLabel.LOCATION,
+            EntityLabel.ORGANIZATION,
+            EntityLabel.GPE,
+            EntityLabel.FACILITY,
+        }
+    )
     guardrails: GuardrailsConfig = field(default_factory=GuardrailsConfig)
 ```
 
@@ -593,7 +610,9 @@ EMAIL_PATTERN = r"""[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"""
 URL_PATTERN = r"""https?://(?:www\.)?[a-zA-Z0-9\-]+(?:\.[a-zA-Z0-9\-]+)*(?:/[^\s]*)?"""
 
 # Phone numbers (international format)
-PHONE_PATTERN = r"""(?:\+?(\d{1,3}))?[-.\s]?\(?(\d{1,4})\)?[-.\s]?(\d{1,4})[-.\s]?(\d{1,9})"""
+PHONE_PATTERN = (
+    r"""(?:\+?(\d{1,3}))?[-.\s]?\(?(\d{1,4})\)?[-.\s]?(\d{1,4})[-.\s]?(\d{1,9})"""
+)
 
 # IP addresses
 IP_PATTERN = r"""\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b"""

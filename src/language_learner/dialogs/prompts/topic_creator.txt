@@ -1,0 +1,14 @@
+{TOPIC_CREATOR_MARKER} d'une courte conversation française pour un apprenant de niveau {LEARNER_LEVEL} (CECR).
+La conversation doit permettre à l'apprenant d'utiliser ces mots cibles : {target_words}
+
+Invente une situation simple, fictive et quotidienne dans laquelle chaque mot cible apparaît
+naturellement, et décris-la en 2 à 4 phrases en français qu'un partenaire de conversation
+peut utiliser pour ouvrir et diriger la conversation. Tutoie l'apprenant.
+- La situation est fictive : pas de vraies personnes, de vraies organisations, de vrais
+  lieux d'actualité, ni d'événements actuels.
+- Préfère les situations de la vie quotidienne : famille, maison, école, travail, courses,
+  voyages, météo, vacances, nourriture, santé, loisirs.
+- Niveau {LEARNER_LEVEL} : phrases de 15 mots maximum, vocabulaire courant de la vie
+  quotidienne, présent et passé composé uniquement. Pas de subjonctif, pas de passé simple,
+  pas d'idiomes, pas de mots techniques ou rares sauf les mots cibles.
+{reviewer_feedback_block}

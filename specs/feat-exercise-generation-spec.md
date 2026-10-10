@@ -286,20 +286,17 @@ class Exercise:
 ```python
 class LLMClient(Protocol):
     """Generic interface for LLM clients"""
-    
+
     def generate(
-        self, 
-        prompt: str, 
-        temperature: float = 0.7, 
-        max_tokens: int = 150
+        self, prompt: str, temperature: float = 0.7, max_tokens: int = 150
     ) -> str:
         """Generate text from a prompt
-        
+
         Args:
             prompt: Input prompt for text generation
             temperature: Sampling temperature (creativity)
             max_tokens: Maximum number of tokens to generate
-            
+
         Returns:
             Generated text string
         """

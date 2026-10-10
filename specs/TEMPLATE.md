@@ -131,10 +131,12 @@ def function_name(param1: type, param2: type) -> ReturnType:
 from dataclasses import dataclass
 from enum import Enum
 
+
 class StatusEnum(Enum):
     PENDING = "pending"
     COMPLETE = "complete"
     FAILED = "failed"
+
 
 @dataclass
 class DataModel:

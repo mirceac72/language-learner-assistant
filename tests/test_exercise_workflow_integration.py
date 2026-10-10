@@ -41,8 +41,10 @@ def test_exercise_player():
         assert player.has_more_exercises()
         # Should have at least 2 exercises (2 in iteration 1 + potentially more in iteration 2)
         progress = player.get_progress()
-        total_exercises = int(progress.split('/')[1])
-        assert total_exercises >= 2, f"Expected at least 2 exercises, got {total_exercises}"
+        total_exercises = int(progress.split("/")[1])
+        assert total_exercises >= 2, (
+            f"Expected at least 2 exercises, got {total_exercises}"
+        )
 
         # Test getting current exercise
         current_exercise = player.get_current_exercise()

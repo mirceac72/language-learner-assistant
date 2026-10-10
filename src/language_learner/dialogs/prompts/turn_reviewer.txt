@@ -1,0 +1,18 @@
+{TURN_REVIEWER_MARKER} d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
+
+Dernier message de l'apprenant : « {learner_message} »
+Mots cibles : {target_words}. Pas encore utilisés avant ce tour : {words_remaining}
+Réponse candidate : « {reply} »
+Corrections candidates : {corrections_json}
+
+Vérifie, dans cet ordre :
+1. Chaque correction est linguistiquement correcte, l'« original » est vraiment une erreur,
+   et la forme « corrected » est juste. Une correction fausse ou inutile vaut score 0.
+2. La réponse est en français uniquement.
+3. La réponse est au niveau {LEARNER_LEVEL} : phrases courtes, mots courants, pas de
+   subjonctif ni de passé simple.
+4. La réponse {ending_check}.
+5. La réponse utilise ou invite un mot pas encore utilisé, s'il en reste.
+
+Réponds avec approved (true seulement si score >= {approval_threshold} et la vérification 1
+est passée), score (0-100) et feedback (en français, une ou deux phrases indiquant quoi corriger).

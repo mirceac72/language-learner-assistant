@@ -18,7 +18,9 @@ def mistral_api_key():
     """Get Mistral API key from environment."""
     api_key = os.getenv("MISTRAL_API_KEY")
     if not api_key:
-        pytest.skip("MISTRAL_API_KEY environment variable not set, skipping integration tests")
+        pytest.skip(
+            "MISTRAL_API_KEY environment variable not set, skipping integration tests"
+        )
     return api_key
 
 

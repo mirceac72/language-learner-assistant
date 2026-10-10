@@ -1,5 +1,4 @@
 # Exercise Generator using LLM
-from uuid import uuid4
 
 from language_learner.core.llm_interface import LLMClient
 from language_learner.exercises.agents.exercise_workflow import ExerciseWorkflow

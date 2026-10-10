@@ -15,15 +15,12 @@ topics and, later, other generated artefacts plug in through the two protocols.
 import logging
 from dataclasses import dataclass
 from operator import add
-from typing import Annotated, Any, Generic, Protocol, TypedDict, TypeVar
+from typing import Annotated, Any, Protocol, TypedDict
 
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
-
-C = TypeVar("C")
-C_contra = TypeVar("C_contra", contravariant=True)
 
 APPROVAL_THRESHOLD = 70
 
@@ -40,7 +37,7 @@ class ReviewVerdict(BaseModel):
     feedback: str
 
 
-class Creator(Protocol[C]):
+class Creator[C](Protocol):
     """Produces a candidate, and improves it when given reviewer feedback."""
 
     def create(self, context: Any, previous: C | None, feedback: str | None) -> C:
@@ -53,7 +50,7 @@ class Creator(Protocol[C]):
         ...
 
 
-class Reviewer(Protocol[C_contra]):
+class Reviewer[C_contra](Protocol):
     """Scores a candidate for a context."""
 
     def review(self, context: Any, candidate: C_contra) -> ReviewVerdict:
@@ -62,7 +59,7 @@ class Reviewer(Protocol[C_contra]):
 
 
 @dataclass
-class ReviewLoopResult(Generic[C]):
+class ReviewLoopResult[C]:
     """Outcome of one loop run."""
 
     candidate: C | None  # None when the attempt limit was reached without approval
@@ -82,7 +79,7 @@ class ReviewLoopState(TypedDict):
     attempt: int
 
 
-class ReviewLoopWorkflow(Generic[C]):
+class ReviewLoopWorkflow[C]:
     """Creator → reviewer → improve on feedback.
 
     A candidate is accepted only with an approved verdict scoring at least the

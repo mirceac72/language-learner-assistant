@@ -26,14 +26,15 @@
 ### Running Tests
 
 **Unit tests (no API required):**
+```bash
+# Run all tests except integration tests
+uv run -m pytest tests/ -v -m "not integration"
+```
 
-Integration tests (require Mistral API key with billing enabled)
+**Integration tests (require Mistral API key with billing enabled):**
 ```bash
 # Run only integration tests
 uv run -m pytest tests/integration/ -v -m integration
-
-# Run all tests except integration tests
-uv run -m pytest tests/ -v -m "not integration"
 
 # Run all tests (unit + integration)
 uv run -m pytest tests/ -v

@@ -265,17 +265,15 @@ player = st.session_state.player
 
 ```python
 def display_exercise(
-    exercise: Exercise, 
-    player: ExercisePlayer, 
-    app: LanguageLearnerApplication
+    exercise: Exercise, player: ExercisePlayer, app: LanguageLearnerApplication
 ) -> bool:
     """Display an exercise and handle user input.
-    
+
     Args:
         exercise: The current exercise to display
         player: The exercise player managing the session
         app: The language learner application
-        
+
     Returns:
         True if exercise was completed (answer submitted), False otherwise
     """
@@ -308,16 +306,11 @@ class ExercisePlayer:
 
 ```python
 # Fill-in-the-blank
-user_answer = st.text_input(
-    "Your answer:", 
-    key=f"answer_{exercise.exercise_id}"
-)
+user_answer = st.text_input("Your answer:", key=f"answer_{exercise.exercise_id}")
 
 # Multiple choice
 user_answer = st.radio(
-    "Options:", 
-    exercise.options, 
-    key=f"answer_{exercise.exercise_id}"
+    "Options:", exercise.options, key=f"answer_{exercise.exercise_id}"
 )
 ```
 

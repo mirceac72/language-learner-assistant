@@ -123,13 +123,13 @@ graph LR
 ```python
 def fetch_web_page(self, url: str) -> str:
     """Fetch content from a web page, honouring text and data mining opt-outs.
-    
+
     Args:
         url: URL to fetch
-        
+
     Returns:
         HTML content of the web page
-        
+
     Raises:
         ContentReservedError: If the page or its origin reserves text and data
             mining rights (robots.txt, tdm-reservation, tdmrep.json, noai)
@@ -140,8 +140,8 @@ def fetch_web_page(self, url: str) -> str:
 # web/tdm_opt_out.py
 @dataclass
 class TdmReservation:
-    source: str      # "robots.txt" | "tdm-reservation-header" | "tdm-reservation-meta" | "tdmrep.json" | "noai"
-    policy_url: str | None = None   # from tdm-policy header or tdmrep.json, if given
+    source: str  # "robots.txt" | "tdm-reservation-header" | "tdm-reservation-meta" | "tdmrep.json" | "noai"
+    policy_url: str | None = None  # from tdm-policy header or tdmrep.json, if given
 
 
 class TdmOptOutChecker:
@@ -157,29 +157,28 @@ class TdmOptOutChecker:
         """Header, meta tag, tdmrep.json and noai checks, in that order. tdmrep.json is
         fetched once per origin and cached. A missing or malformed file means no reservation."""
 
+
 def extract_text_from_html(self, html: str) -> str:
     """Extract text content from HTML.
-    
+
     Args:
         html: HTML content to extract text from
-        
+
     Returns:
         Cleaned text content
     """
 
+
 def extract_vocabulary(
-    self, 
-    text: str, 
-    min_word_length: int | None = None, 
-    top_n: int | None = None
+    self, text: str, min_word_length: int | None = None, top_n: int | None = None
 ) -> list[tuple[str, int]]:
     """Extract vocabulary from text.
-    
+
     Args:
         text: Text to extract vocabulary from
         min_word_length: Minimum word length to consider (default from config)
         top_n: Number of top words to return (default from config)
-        
+
     Returns:
         List of (word, count) tuples sorted by frequency
     """

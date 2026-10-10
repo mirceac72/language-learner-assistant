@@ -1,11 +1,10 @@
 # Mistral LLM Client using official mistralai library
-import json
 import os
-from typing import Any, Optional
+from typing import Any
 
-from pyrate_limiter import Limiter, Rate, Duration
 from mistralai.client import Mistral
 from mistralai.client.models.usermessage import UserMessage
+from pyrate_limiter import Duration, Limiter, Rate
 
 from language_learner.core.llm_interface import LLMClient
 from language_learner.exceptions import LLMError
@@ -18,7 +17,7 @@ class MistralLLMClient(LLMClient):
         self,
         api_key: str | None = None,
         model: str | None = None,
-        rate_limit: Optional[float] = None,
+        rate_limit: float | None = None,
     ) -> None:
         """Initialize Mistral LLM client.
 
@@ -33,7 +32,7 @@ class MistralLLMClient(LLMClient):
         self.api_key = api_key or os.getenv("MISTRAL_API_KEY")
         self.model = model
         self.rate_limit = rate_limit
-        
+
         # Initialize rate limiter using pyrate_limiter
         if self.rate_limit > 0:
             # Convert rate_limit (calls/second) to duration per call
@@ -75,7 +74,7 @@ class MistralLLMClient(LLMClient):
             # Apply rate limiting using pyrate_limiter
             if self.limiter:
                 self.limiter.try_acquire()
-            
+
             # Build request parameters
             request_params = {
                 "model": self.model,
@@ -83,7 +82,7 @@ class MistralLLMClient(LLMClient):
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            
+
             # If response_schema is provided, use response_format
             if response_schema is not None:
                 # Mistral structured output expects the schema nested under a
@@ -97,7 +96,7 @@ class MistralLLMClient(LLMClient):
                         "strict": True,
                     },
                 }
-            
+
             chat_response = self.client.chat.complete(**request_params)
 
             if chat_response.choices and len(chat_response.choices) > 0:

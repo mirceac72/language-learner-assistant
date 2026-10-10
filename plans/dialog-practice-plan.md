@@ -23,7 +23,8 @@ persistence of completed dialogs, external prompt files.
 | `src/language_learner/core/review_loop.py` | `ReviewVerdict`, `Creator`/`Reviewer` protocols, `ReviewLoopResult`, `ReviewLoopWorkflow` (LangGraph) |
 | `src/language_learner/models/dialog.py` | `DialogRole`, `DialogStatus`, `Correction`, `DialogTurn`, `DialogSession`, `DialogSummary` |
 | `src/language_learner/dialogs/__init__.py` | package marker |
-| `src/language_learner/dialogs/dialog_prompts.py` | `LEARNER_LEVEL`, prompt marker constants, four French prompt builders, `build_wrap_up` |
+| `src/language_learner/dialogs/dialog_prompts.py` | `LEARNER_LEVEL`, prompt marker constants, four French prompt builders (load and render the templates), `build_wrap_up` |
+| `src/language_learner/dialogs/prompts/*.txt` | the four LLM prompt templates (`turn_creator.txt`, `turn_reviewer.txt`, `topic_creator.txt`, `topic_reviewer.txt`) with `{placeholder}` markers |
 | `src/language_learner/dialogs/agents/__init__.py` | package marker |
 | `src/language_learner/dialogs/agents/dialog_turn_creator.py` | `DialogTurnContext` (with `carried_corrections`), `CorrectionOutput`, `DialogTurnOutput`, `DialogTurnCreatorAgent`, parse-step filtering |
 | `src/language_learner/dialogs/agents/dialog_turn_reviewer.py` | hard-failure short-circuit (empty or overlong reply), `DialogTurnReviewerAgent` |
@@ -33,7 +34,7 @@ persistence of completed dialogs, external prompt files.
 | `src/language_learner/ui/dialog_display.py` | `display_dialog` |
 | `tests/test_review_loop.py` | TC7, TC8, TC9, approval threshold (default and custom), exception propagation; stub creator/reviewer, no LLM |
 | `tests/test_dialog_models.py` | TC1 |
-| `tests/test_dialog_prompts.py` | TC2, TC13, TC16 |
+| `tests/test_dialog_prompts.py` | TC2, TC13, TC16, TC21 |
 | `tests/test_dialog_turn_creator.py` | TC3, JSON parsing, improve-on-feedback prompt content, TC4, TC5, TC6, TC20 (parse-step filtering: word normalisation and membership, correction rules) |
 | `tests/test_dialog_turn_reviewer.py` | hard-failure short-circuit (empty or overlong reply, no LLM call) |
 | `tests/test_dialog_topic_agents.py` | topic creator and reviewer with mock, TC15, TC17 |
@@ -71,13 +72,14 @@ green, then one commit with a single-line Conventional Commits message.
    `tests/test_dialog_models.py`.
    Commit: `feat: add dialog session models and dialog practice settings`
 
-3. **Prompts and mock markers.** `dialogs/dialog_prompts.py` with marker constants that both
-   the builders and `MockLLMClient` import, so they cannot drift. The four prompts are written
-   in French (structured-output field names stay English); this reduces the English content
-   in the prompt and the risk of English leaking into learner-facing text. The creator prompt states
-   that target words are returned exactly as listed; the closing prompt carries the discarded
-   reply's correction. Extend `mock_llm.py` to answer all four prompts with valid JSON.
-   `tests/test_dialog_prompts.py`.
+3. **Prompts and mock markers.** The four prompt templates live in `dialogs/prompts/*.txt`;
+   `dialogs/dialog_prompts.py` loads them and renders them with placeholder replacement, with
+   marker constants that both the builders and `MockLLMClient` import, so they cannot drift.
+   The four prompts are written in French (structured-output field names stay English); this
+   reduces the English content in the prompt and the risk of English leaking into learner-facing
+   text. The creator prompt states that target words are returned exactly as listed; the closing
+   prompt carries the discarded reply's correction. Extend `mock_llm.py` to answer all four
+   prompts with valid JSON. `tests/test_dialog_prompts.py`.
    Commit: `feat: add dialog prompt builders and mock LLM responses for dialog practice`
 
 4. **Turn agents.** `dialog_turn_creator.py`, `dialog_turn_reviewer.py`, their tests. The

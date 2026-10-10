@@ -1,11 +1,12 @@
 """Comprehensive unit tests for the VocabularyExtractor module"""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 import requests
 
-from language_learner.web.vocabulary_extractor import VocabularyExtractor
 from language_learner.exceptions import WebFetchError
+from language_learner.web.vocabulary_extractor import VocabularyExtractor
 
 
 class TestVocabularyExtractorInitialization:
@@ -30,9 +31,9 @@ class TestVocabularyExtractorInitialization:
         """Test that extractor can access settings"""
         extractor = VocabularyExtractor()
         assert extractor.settings is not None
-        assert hasattr(extractor.settings, 'web_request_timeout')
-        assert hasattr(extractor.settings, 'min_word_length')
-        assert hasattr(extractor.settings, 'top_vocabulary_words')
+        assert hasattr(extractor.settings, "web_request_timeout")
+        assert hasattr(extractor.settings, "min_word_length")
+        assert hasattr(extractor.settings, "top_vocabulary_words")
 
 
 class TestFetchWebPage:
@@ -42,86 +43,88 @@ class TestFetchWebPage:
         """Set up VocabularyExtractor for each test"""
         self.extractor = VocabularyExtractor()
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_fetch_web_page_success(self, mock_get):
         """Test successful web page fetch"""
         mock_response = MagicMock()
         mock_response.text = "<html><body>Test content</body></html>"
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
+
         result = self.extractor.fetch_web_page("http://example.com")
-        
+
         assert result == "<html><body>Test content</body></html>"
         mock_get.assert_called_once()
         call_kwargs = mock_get.call_args[1]
-        assert 'User-Agent' in call_kwargs['headers']
-        assert call_kwargs['timeout'] == self.extractor.settings.web_request_timeout
+        assert "User-Agent" in call_kwargs["headers"]
+        assert call_kwargs["timeout"] == self.extractor.settings.web_request_timeout
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_fetch_web_page_retry_on_timeout(self, mock_get):
         """Test retry logic on timeout errors"""
         mock_get.side_effect = [
             requests.Timeout("Connection timed out"),
             requests.Timeout("Connection timed out"),
-            MagicMock(text="<html>Success</html>", raise_for_status=MagicMock())
+            MagicMock(text="<html>Success</html>", raise_for_status=MagicMock()),
         ]
-        
-        with patch('time.sleep'):  # Don't actually sleep during tests
+
+        with patch("time.sleep"):  # Don't actually sleep during tests
             result = self.extractor.fetch_web_page("http://example.com")
-        
+
         assert result == "<html>Success</html>"
         assert mock_get.call_count == 3
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_fetch_web_page_retry_on_connection_error(self, mock_get):
         """Test retry logic on connection errors"""
         mock_get.side_effect = [
             requests.ConnectionError("Connection refused"),
-            MagicMock(text="<html>Success</html>", raise_for_status=MagicMock())
+            MagicMock(text="<html>Success</html>", raise_for_status=MagicMock()),
         ]
-        
-        with patch('time.sleep'):
+
+        with patch("time.sleep"):
             result = self.extractor.fetch_web_page("http://example.com")
-        
+
         assert result == "<html>Success</html>"
         assert mock_get.call_count == 2
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_fetch_web_page_no_retry_on_404(self, mock_get):
         """Test that non-transient errors (404) are not retried"""
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
         mock_get.return_value = mock_response
-        
+
         with pytest.raises(WebFetchError) as exc_info:
             self.extractor.fetch_web_page("http://example.com/404")
-        
+
         assert "Failed to fetch web page after" in str(exc_info.value)
         # Should only try once for non-transient errors
         assert mock_get.call_count == 1
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_fetch_web_page_exhausted_retries(self, mock_get):
         """Test behavior when all retries are exhausted"""
         mock_get.side_effect = requests.Timeout("Connection timed out")
-        
+
         with pytest.raises(WebFetchError) as exc_info:
-            with patch('time.sleep'):
+            with patch("time.sleep"):
                 self.extractor.fetch_web_page("http://example.com")
-        
+
         assert "Failed to fetch web page after" in str(exc_info.value)
         # Should try max_retries + 1 times (initial + retries)
         expected_attempts = self.extractor.settings.web_request_max_retries + 1
         assert mock_get.call_count == expected_attempts
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_fetch_web_page_http_error(self, mock_get):
         """Test handling of HTTP errors (4xx, 5xx)"""
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.HTTPError("500 Internal Server Error")
+        mock_response.raise_for_status.side_effect = requests.HTTPError(
+            "500 Internal Server Error"
+        )
         mock_get.return_value = mock_response
-        
+
         with pytest.raises(WebFetchError):
             self.extractor.fetch_web_page("http://example.com/500")
 
@@ -137,7 +140,7 @@ class TestExtractTextFromHtml:
         """Test extraction from basic HTML"""
         html = "<html><body><p>Hello world</p></body></html>"
         result = self.extractor.extract_text_from_html(html)
-        
+
         assert "Hello" in result
         assert "world" in result
         assert "<html>" not in result
@@ -152,7 +155,7 @@ class TestExtractTextFromHtml:
         </html>
         """
         result = self.extractor.extract_text_from_html(html)
-        
+
         assert "var x" not in result
         assert "script" not in result.lower()
         assert "Content here" in result
@@ -166,7 +169,7 @@ class TestExtractTextFromHtml:
         </html>
         """
         result = self.extractor.extract_text_from_html(html)
-        
+
         assert "color: red" not in result
         assert "<style>" not in result
         assert "body { color: red; }" not in result
@@ -178,14 +181,14 @@ class TestExtractTextFromHtml:
         <html>
             <body>
                 <p>Text</p>
-                
-                
+
+
                 <p>More text</p>
             </body>
         </html>
         """
         result = self.extractor.extract_text_from_html(html)
-        
+
         # Should not have multiple consecutive newlines
         assert "\n\n\n" not in result
 
@@ -198,7 +201,7 @@ class TestExtractTextFromHtml:
         """Test extraction from HTML with no body content"""
         html = "<html><head><title>Test</title></head></html>"
         result = self.extractor.extract_text_from_html(html)
-        
+
         # Should still extract title if present
         assert result == "" or "Test" in result
 
@@ -206,7 +209,7 @@ class TestExtractTextFromHtml:
         """Test that French accented characters are preserved"""
         html = "<html><body>C'est l'été à Paris</body></html>"
         result = self.extractor.extract_text_from_html(html)
-        
+
         assert "l'été" in result
         assert "à" in result
 
@@ -222,7 +225,7 @@ class TestExtractVocabulary:
         """Test basic vocabulary extraction"""
         text = "le chat est sur la table le chien est sous la table"
         result = self.extractor.extract_vocabulary(text)
-        
+
         assert isinstance(result, list)
         assert len(result) > 0
         # Check that we get tuples of (word, count)
@@ -232,7 +235,7 @@ class TestExtractVocabulary:
         """Test that stopwords are filtered out"""
         text = "le le le chat est une table"
         result = self.extractor.extract_vocabulary(text)
-        
+
         # Common French stopwords should be filtered
         words = [item[0] for item in result]
         assert "le" not in words
@@ -244,7 +247,7 @@ class TestExtractVocabulary:
         """Test that short words are filtered out based on min_word_length"""
         text = "a bb ccc dddd"
         result = self.extractor.extract_vocabulary(text, min_word_length=3)
-        
+
         words = [item[0] for item in result]
         assert "a" not in words
         assert "bb" not in words
@@ -255,20 +258,22 @@ class TestExtractVocabulary:
         # This test may require the French spaCy model to be installed
         text = "Paris est une ville en France"
         result = self.extractor.extract_vocabulary(text)
-        
+
         words = [item[0] for item in result]
         # Paris and France should be filtered as named entities if NER works
         # Note: This depends on spaCy model availability
         named_entities = {"paris", "france"}
         # At least one named entity should be filtered out
         filtered_entities = named_entities - set(words)
-        assert len(filtered_entities) > 0, f"Expected named entities to be filtered, but all {named_entities} were in result {words}"
+        assert len(filtered_entities) > 0, (
+            f"Expected named entities to be filtered, but all {named_entities} were in result {words}"
+        )
 
     def test_extract_vocabulary_top_n_limiting(self):
         """Test that top N results are limited"""
         text = "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10"
         result = self.extractor.extract_vocabulary(text, top_n=3)
-        
+
         assert len(result) <= 3
 
     def test_extract_vocabulary_custom_min_length(self):
@@ -276,7 +281,7 @@ class TestExtractVocabulary:
         text = "a bb ccc dddd eeee"
         result_low = self.extractor.extract_vocabulary(text, min_word_length=2)
         result_high = self.extractor.extract_vocabulary(text, min_word_length=4)
-        
+
         # With higher min length, should get fewer results
         assert len(result_high) <= len(result_low)
 
@@ -284,12 +289,12 @@ class TestExtractVocabulary:
         """Test that vocabulary extraction is case insensitive"""
         text = "Chat chat CHAT ChAt"
         result = self.extractor.extract_vocabulary(text)
-        
+
         # All words should be lowercased
         words = [item[0] for item in result]
         assert all(word == word.lower() for word in words)
         # Should only have one entry for 'chat'
-        chat_counts = [item for item in result if item[0] == 'chat']
+        chat_counts = [item for item in result if item[0] == "chat"]
         assert len(chat_counts) == 1
 
     def test_extract_vocabulary_empty_text(self):
@@ -301,21 +306,22 @@ class TestExtractVocabulary:
         """Test extraction from text with only stopwords"""
         text = "le la les des du"
         result = self.extractor.extract_vocabulary(text)
-        
+
         # Should return empty result as all words are stopwords
         words = [item[0] for item in result]
-        assert all(word not in text.split() for word in words), \
+        assert all(word not in text.split() for word in words), (
             f"Stopwords should be filtered, but got: {words}"
+        )
 
     def test_extract_vocabulary_frequency_counting(self):
         """Test that word frequencies are counted correctly"""
         text = "chat chien chat chat table chien"
         result = self.extractor.extract_vocabulary(text)
-        
+
         # Find chat and chien in results
         chat_count = next((count for word, count in result if word == "chat"), 0)
         chien_count = next((count for word, count in result if word == "chien"), 0)
-        
+
         assert chat_count == 3
         assert chien_count == 2
 
@@ -323,7 +329,7 @@ class TestExtractVocabulary:
         """Test that results are sorted by frequency (descending)"""
         text = "a a a b b c"
         result = self.extractor.extract_vocabulary(text, min_word_length=1)
-        
+
         # Should be sorted by frequency descending
         if len(result) > 1:
             for i in range(len(result) - 1):
@@ -333,7 +339,7 @@ class TestExtractVocabulary:
         """Test that non-alphabetic tokens are filtered out"""
         text = "hello! world, how's it going?"
         result = self.extractor.extract_vocabulary(text)
-        
+
         words = [item[0] for item in result]
         # Punctuation should be filtered out
         assert "!" not in words
@@ -343,17 +349,17 @@ class TestExtractVocabulary:
     def test_extract_vocabulary_uses_config_defaults(self):
         """Test that extract_vocabulary uses configuration defaults when not provided"""
         text = "test word"
-        
+
         # Call without parameters
         result1 = self.extractor.extract_vocabulary(text)
-        
+
         # Call with explicit defaults matching config
         result2 = self.extractor.extract_vocabulary(
             text,
             min_word_length=self.extractor.settings.min_word_length,
-            top_n=self.extractor.settings.top_vocabulary_words
+            top_n=self.extractor.settings.top_vocabulary_words,
         )
-        
+
         # Results should be the same
         assert result1 == result2
 
@@ -365,7 +371,7 @@ class TestEndToEndExtraction:
         """Set up VocabularyExtractor for each test"""
         self.extractor = VocabularyExtractor()
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_end_to_end_with_mock_fetch(self, mock_get):
         """Test complete workflow from URL to vocabulary"""
         mock_response = MagicMock()
@@ -378,25 +384,25 @@ class TestEndToEndExtraction:
         """
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
+
         # Step 1: Fetch web page
         html = self.extractor.fetch_web_page("http://example.com")
-        
+
         # Step 2: Extract text from HTML
         text = self.extractor.extract_text_from_html(html)
-        
+
         # Step 3: Extract vocabulary
         vocabulary = self.extractor.extract_vocabulary(text)
-        
+
         # Verify results
         assert isinstance(html, str)
         assert len(text) > 0
         assert isinstance(vocabulary, list)
-        
+
         # Verify text cleaning removed HTML tags
         assert "<p>" not in text
         assert "Le chat" in text or "chat" in text
-        
+
         # Verify vocabulary extraction worked
         words = [item[0] for item in vocabulary]
         assert "chat" in words or "chien" in words or "table" in words
@@ -408,32 +414,32 @@ class TestConfigurationUsage:
     def test_respects_web_request_timeout(self):
         """Test that web request timeout is respected"""
         extractor = VocabularyExtractor()
-        
-        with patch('requests.get') as mock_get:
+
+        with patch("requests.get") as mock_get:
             mock_response = MagicMock()
             mock_response.text = "<html>Test</html>"
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
-            
+
             extractor.fetch_web_page("http://example.com")
-            
+
             call_kwargs = mock_get.call_args[1]
-            assert call_kwargs['timeout'] == extractor.settings.web_request_timeout
+            assert call_kwargs["timeout"] == extractor.settings.web_request_timeout
 
     def test_respects_user_agent(self):
         """Test that user agent is respected"""
         extractor = VocabularyExtractor()
-        
-        with patch('requests.get') as mock_get:
+
+        with patch("requests.get") as mock_get:
             mock_response = MagicMock()
             mock_response.text = "<html>Test</html>"
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
-            
+
             extractor.fetch_web_page("http://example.com")
-            
+
             call_kwargs = mock_get.call_args[1]
-            assert call_kwargs['headers']['User-Agent'] == extractor.settings.user_agent
+            assert call_kwargs["headers"]["User-Agent"] == extractor.settings.user_agent
 
 
 class TestErrorHandling:
@@ -443,22 +449,22 @@ class TestErrorHandling:
         """Set up VocabularyExtractor for each test"""
         self.extractor = VocabularyExtractor()
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_network_error_propagates_as_web_fetch_error(self, mock_get):
         """Test that network errors are properly wrapped in WebFetchError"""
         mock_get.side_effect = requests.ConnectionError("No network")
-        
+
         with pytest.raises(WebFetchError) as exc_info:
-            with patch('time.sleep'):
+            with patch("time.sleep"):
                 self.extractor.fetch_web_page("http://example.com")
-        
+
         assert "Failed to fetch web page after" in str(exc_info.value)
         assert isinstance(exc_info.value.__cause__, requests.ConnectionError)
 
     def test_invalid_url_handling(self):
         """Test handling of invalid URL"""
         with pytest.raises(WebFetchError):
-            with patch('time.sleep'):
+            with patch("time.sleep"):
                 self.extractor.fetch_web_page("invalid-url")
 
     def test_html_with_complex_structure(self):
@@ -485,14 +491,14 @@ class TestErrorHandling:
         </html>
         """
         result = self.extractor.extract_text_from_html(html)
-        
+
         # Should extract text content
         assert "Test Page" in result or "Main Title" in result
         assert "Paragraph" in result
         assert "Item 1" in result
         assert "Item 2" in result
         assert "Footer content" in result
-        
+
         # Should not contain script/style content
         assert "var x" not in result
         assert "color: red" not in result
@@ -515,6 +521,7 @@ class TestMultipleLanguages:
             if "en_core_web_sm" in str(e):
                 # Verify NLTK has English stopwords
                 from nltk.corpus import stopwords
+
                 eng_stopwords = set(stopwords.words("english"))
                 assert len(eng_stopwords) > 0
 
@@ -523,23 +530,26 @@ class TestMultipleLanguages:
         extractor = VocabularyExtractor()
         text = "café restaurant hôtel naïve"  # Words with accents
         result = extractor.extract_vocabulary(text)
-        
+
         # Accented words should be extracted if they pass other filters
         words = [item[0] for item in result]
         # Words with accents should be preserved
         accented_words = {"café", "hôtel", "naïve"}
-        assert any(word in accented_words for word in words), \
+        assert any(word in accented_words for word in words), (
             f"Expected accented words to be extracted, got: {words}"
+        )
 
     def test_vocabulary_extraction_filters_common_french_names(self):
         """Test that common French names are filtered out by NER"""
         extractor = VocabularyExtractor()
         text = "Jean a visité Marie. Pierre et Sophie sont amis."
         result = extractor.extract_vocabulary(text)
-        
+
         words = [item[0] for item in result]
         # Common French names should be filtered by NER
         french_names = {"jean", "marie", "pierre", "sophie"}
         # At least some names should be filtered out
         filtered_names = french_names - set(words)
-        assert len(filtered_names) > 0, f"Expected some names to be filtered, but all names {french_names} were in result {words}"
+        assert len(filtered_names) > 0, (
+            f"Expected some names to be filtered, but all names {french_names} were in result {words}"
+        )

@@ -13,14 +13,14 @@ class LLMClient(Protocol):
         response_schema: dict[str, Any] | None = None,
     ) -> str:
         """Generate text from a prompt.
-        
+
         Args:
             prompt: Input prompt for text generation
             temperature: Sampling temperature (0-1)
             max_tokens: Maximum number of tokens to generate
             response_schema: Optional JSON schema for structured output.
                            If provided and the API supports it, the response will be formatted as JSON.
-        
+
         Returns:
             Generated text
         """

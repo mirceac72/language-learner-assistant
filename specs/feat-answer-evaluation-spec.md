@@ -144,28 +144,24 @@ graph TD
 ```python
 class AnswerEvaluator:
     """Evaluate user answers to language learning exercises"""
-    
+
     def __init__(self, llm_client: LLMClient) -> None:
         """Initialize with LLM client.
-        
+
         Args:
             llm_client: LLM client for enhanced evaluation (optional for simple mode)
         """
-    
-    def evaluate_answer(
-        self, 
-        exercise: Exercise, 
-        user_answer: str
-    ) -> EvaluationResult:
+
+    def evaluate_answer(self, exercise: Exercise, user_answer: str) -> EvaluationResult:
         """Evaluate a user's answer to an exercise.
-        
+
         Args:
             exercise: The exercise being answered
             user_answer: User's response as string
-            
+
         Returns:
             EvaluationResult with score, correctness, feedback, explanation, and tips
-            
+
         Raises:
             ValueError: If exercise or user_answer is invalid
         """
@@ -195,12 +191,9 @@ class EvaluationResult:
 ```python
 class LLMClient(Protocol):
     """Generic interface for LLM clients"""
-    
+
     def generate(
-        self, 
-        prompt: str, 
-        temperature: float = 0.7, 
-        max_tokens: int = 150
+        self, prompt: str, temperature: float = 0.7, max_tokens: int = 150
     ) -> str:
         """Generate text from a prompt"""
         ...

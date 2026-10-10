@@ -5,7 +5,6 @@ This module provides NER filtering capabilities using spaCy to identify and remo
 proper nouns (people, locations, organizations) from vocabulary lists.
 """
 
-
 import spacy
 
 from ..logging import get_logger
@@ -43,13 +42,13 @@ class NERFilter:
         """
         # Map language codes to spaCy model names
         model_map = {
-            'french': 'fr_core_news_sm',
-            'english': 'en_core_web_sm',
-            'german': 'de_core_news_sm',
-            'spanish': 'es_core_news_sm'
+            "french": "fr_core_news_sm",
+            "english": "en_core_web_sm",
+            "german": "de_core_news_sm",
+            "spanish": "es_core_news_sm",
         }
 
-        model_name = model_map.get(self.language, 'fr_core_news_sm')
+        model_name = model_map.get(self.language, "fr_core_news_sm")
 
         if model_name not in _SPACY_MODEL_CACHE:
             try:
@@ -81,12 +80,12 @@ class NERFilter:
                     for token in ent:
                         named_entities.add(token.text.lower())
 
-            self.logger.debug(f"Found {len(named_entities)} named entities: {named_entities}")
+            self.logger.debug(
+                f"Found {len(named_entities)} named entities: {named_entities}"
+            )
             return named_entities
 
         except Exception as e:
             self.logger.error(f"Error in named entity extraction: {e}")
             # Return empty set if NER fails (no filtering)
             return set()
-
-

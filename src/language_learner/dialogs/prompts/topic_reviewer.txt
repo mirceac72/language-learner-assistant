@@ -1,0 +1,15 @@
+{TOPIC_REVIEWER_MARKER} d'une conversation française pour un apprenant de niveau {LEARNER_LEVEL}.
+Mots cibles : {target_words}
+Sujet candidat : « {topic} »
+
+Vérifie, dans cet ordre :
+1. Le sujet est en français uniquement.
+2. Le sujet est une situation fictive de la vie quotidienne : pas de vraies personnes,
+   organisations, lieux d'actualité, ni événements actuels.
+3. Le sujet est au niveau {LEARNER_LEVEL} : 15 mots maximum par phrase, mots courants,
+   pas de subjonctif ni de passé simple, pas de mots rares ou techniques sauf les mots cibles.
+4. Chaque mot cible a une place naturelle dans une conversation sur ce sujet.
+5. Le sujet fait 2 à 4 phrases.
+
+Réponds avec approved (true seulement si score >= {approval_threshold}), score (0-100) et
+feedback (en français, une ou deux phrases indiquant quoi corriger).

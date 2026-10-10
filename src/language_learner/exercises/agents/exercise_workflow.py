@@ -20,6 +20,7 @@ logger.setLevel(logging.INFO)
 
 class ExerciseWorkflowState(TypedDict):
     """State for the complete exercise workflow"""
+
     vocabulary_words: list[str]
     generated_exercises: list[Exercise]
     reviewed_exercises: list[Exercise]
@@ -66,7 +67,9 @@ class ExerciseWorkflow:
 
         return workflow
 
-    def run_workflow(self, vocabulary_words: list[str], max_iterations: int = 2) -> list[Exercise]:
+    def run_workflow(
+        self, vocabulary_words: list[str], max_iterations: int = 2
+    ) -> list[Exercise]:
         """Run the complete workflow with multiple iterations.
 
         Args:
@@ -108,19 +111,22 @@ class ExerciseWorkflow:
             # If we have good exercises and this isn't the last iteration,
             # use feedback to improve in next iteration
             if iteration < max_iterations and state["feedback"]:
-                logger.info(f"Iteration {iteration} completed: {len(state['reviewed_exercises'])} approved, {len(state['rejected_exercises'])} rejected")
+                logger.info(
+                    f"Iteration {iteration} completed: {len(state['reviewed_exercises'])} approved, {len(state['rejected_exercises'])} rejected"
+                )
 
                 # Prepare for next iteration - keep rejected exercises for improvement
                 # but focus on new generation for remaining words
                 if iteration == 1:
-                    # In second iteration, try to improve rejected exercises
-                    state["vocabulary_words"] = [
-                        word for word in vocabulary_words[:5]  # Limit to top 5 for second iteration
-                    ]
+                    # In second iteration, try to improve rejected exercises,
+                    # limited to the top 5 words
+                    state["vocabulary_words"] = list(vocabulary_words[:5])
             else:
                 break
 
-        logger.info(f"Workflow completed: {len(state['reviewed_exercises'])} final exercises approved")
+        logger.info(
+            f"Workflow completed: {len(state['reviewed_exercises'])} final exercises approved"
+        )
 
         return [x["exercise"] for x in state["reviewed_exercises"]]
 

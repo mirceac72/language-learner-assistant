@@ -12,7 +12,7 @@ class TestNERFilterInitialization:
         """Test successful initialization with French language"""
         ner_filter = NERFilter("french")
         assert ner_filter.nlp is not None
-        assert hasattr(ner_filter.nlp, 'pipe')
+        assert hasattr(ner_filter.nlp, "pipe")
         assert ner_filter.language == "french"
         assert ner_filter.entities_to_filter == {"PER", "LOC", "GPE", "ORG", "FAC"}
 
@@ -73,7 +73,9 @@ class TestNamedEntityExtraction:
 
     def test_extract_common_french_person_names(self):
         """Test extraction of common French person names"""
-        text = "Jean a rencontré Marie à la boulangerie. Pierre et Sophie jouent au parc."
+        text = (
+            "Jean a rencontré Marie à la boulangerie. Pierre et Sophie jouent au parc."
+        )
         entities = self.ner_filter.get_named_entities(text)
 
         # Should find French person names

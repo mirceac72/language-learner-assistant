@@ -1,9 +1,10 @@
 """Tests for AnswerEvaluator"""
+
 import pytest
 
 from language_learner.core.mock_llm import MockLLMClient
 from language_learner.evaluation.evaluator import AnswerEvaluator
-from language_learner.models.exercise import Exercise, ExerciseType, DifficultyLevel
+from language_learner.models.exercise import Exercise, ExerciseType
 
 
 def make_exercise(exercise_type: ExerciseType, correct_answer: str) -> Exercise:
@@ -111,7 +112,7 @@ class TestParseLLMEvaluation:
         evaluator = AnswerEvaluator(MockLLMClient())
         # Test fallback parsing for "score: 80" format
         result = evaluator._parse_llm_json_response(
-            'score: 80',
+            "score: 80",
         )
         assert result.score == 80.0
         assert result.feedback == "Acceptable"
