@@ -154,9 +154,12 @@ The spec must follow these.
 9. **Dialog topic: fictional, built from the target words, reviewed like a turn.** The
    model invents an everyday situation at A2-B1 in which the target words fit naturally
    and the reviewer checks it. The page is not summarised or retold.
-10. **Generic review loop.** The create → review → improve → pick-best loop is built once
+10. **Generic review loop.** The create → review → improve loop is built once
     as a reusable component, because the application will need it for every kind of
-    generated content, not only dialog turns and topics.
+    generated content, not only dialog turns and topics. When the reviewer does not
+    approve within the attempt limit, no candidate is shown: the dialog ends,
+    because it is better to stop with a closing message than to show a
+    sub-standard response.
 
 ## Open questions
 
