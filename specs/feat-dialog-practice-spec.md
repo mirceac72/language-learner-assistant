@@ -700,12 +700,12 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
   - [x] Unit tests for `DialogSession` properties (`learner_turn_count`, `words_used`, `words_remaining`)
 - [ ] **Step 2: Prompts and creator agent**
   - [x] Add `dialogs/dialog_prompts.py` with `LEARNER_LEVEL`, the turn builders, the topic builders and `build_wrap_up`; the four prompts are written in French, reducing the English content in the prompt (structured-output field names stay English); the creator prompt states that target words are returned exactly as listed, and the closing prompt carries the discarded reply's correction
-  - [ ] Add `dialogs/agents/dialog_turn_creator.py` with `DialogTurnOutput` and the creator node (one `generate` call with `response_schema`, `temperature=0.7`, `max_tokens=300`), including the parse-step filtering (word normalisation and membership, correction rules)
-  - [ ] Unit tests: prompt contains level, target words, remaining words, history, ending rule per turn kind; creator parses valid JSON and raises `DialogTurnError` on invalid JSON; the word filter keeps listed forms, drops unlisted ones and normalises case and accents (targets `prévenir`/`boire` against "prévient" and "bu")
+  - [x] Add `dialogs/agents/dialog_turn_creator.py` with `DialogTurnOutput` and the creator node (one `generate` call with `response_schema`, `temperature=0.7`, `max_tokens=300`), including the parse-step filtering (word normalisation and membership, correction rules)
+  - [x] Unit tests: prompt contains level, target words, remaining words, history, ending rule per turn kind; creator parses valid JSON and raises `DialogTurnError` on invalid JSON; the word filter keeps listed forms, drops unlisted ones and normalises case and accents (targets `prévenir`/`boire` against "prévient" and "bu")
 - [ ] **Step 3: Generic review loop, reviewer agents**
   - [x] Add `core/review_loop.py`: `ReviewVerdict`, `Creator` and `Reviewer` protocols, `ReviewLoopResult`, `ReviewLoopWorkflow` as a LangGraph StateGraph with a conditional edge back to the creator while rejected and `attempt < max_attempts`, ending without an approved candidate otherwise, with a configurable `approval_threshold` (default 70)
   - [x] Unit tests for the loop with stub creator and reviewer (no LLM): approve on first attempt; reject then approve, with `previous` and `feedback` passed to the second `create`; all attempts rejected then `approved=False` with `candidate=None`; `approved=true` with a score below the threshold treated as a rejection; a custom `approval_threshold` enforced; creator exception propagates
-  - [ ] Add `dialogs/agents/dialog_turn_reviewer.py` with the hard-failure short-circuit (empty or overlong reply, no LLM call) and the LLM review (`temperature=0.3`, `max_tokens=200`); it does not score `target_words_used`
+  - [x] Add `dialogs/agents/dialog_turn_reviewer.py` with the hard-failure short-circuit (empty or overlong reply, no LLM call) and the LLM review (`temperature=0.3`, `max_tokens=200`); it does not score `target_words_used`
   - [ ] Add `dialogs/agents/dialog_topic_creator.py` and `dialog_topic_reviewer.py`; unit tests with `MockLLMClient` for each agent, plus one end-to-end topic loop test that returns "" when the LLM raises or the reviewer never approves
 - [ ] **Step 4: Player and application wiring**
   - [ ] Add `dialogs/dialog_player.py`: the last learner turn runs with `is_closing=True` directly; when the words run out earlier, the reply text is discarded, its corrections are carried into a closing loop run, and the closing turn is skipped when that loop fails
@@ -751,11 +751,11 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 - [x] TC1 `DialogSession.words_remaining` shrinks as learner turns record `target_words_used`, and never contains a word twice.
 - [x] TC2 `build_creator_prompt` for the opening turn contains the greeting rule and no learner message; for the closing turn contains the closing rule.
 - [x] TC21 The four LLM prompt templates are stored in `dialogs/prompts/*.txt`; the builders load them with `importlib.resources` and replace `{placeholder}` markers (a line that is exactly `{name}` is a block placeholder, replaced by the value's lines or dropped when empty).
-- [ ] TC3 Creator node raises `DialogTurnError` when the LLM returns non-JSON.
-- [ ] TC4 Creator parse step drops a correction whose `original` is not in the learner message.
-- [ ] TC5 Creator parse step keeps only the first of two corrections.
-- [ ] TC6 Creator parse step drops all corrections on the opening turn, and keeps the answered message's correction on a closing turn.
-- [ ] TC20 Creator parse step normalises proposed target words (Unicode NFC, lowercase) and keeps only words in the target set: with targets `prévenir`/`boire`, a proposal of `prévenir` is kept, `prévient` (the learner's form) is dropped, and `Boire` is normalised to `boire`.
+- [x] TC3 Creator node raises `DialogTurnError` when the LLM returns non-JSON.
+- [x] TC4 Creator parse step drops a correction whose `original` is not in the learner message.
+- [x] TC5 Creator parse step keeps only the first of two corrections.
+- [x] TC6 Creator parse step drops all corrections on the opening turn, and keeps the answered message's correction on a closing turn.
+- [x] TC20 Creator parse step normalises proposed target words (Unicode NFC, lowercase) and keeps only words in the target set: with targets `prévenir`/`boire`, a proposal of `prévenir` is kept, `prévient` (the learner's form) is dropped, and `Boire` is normalised to `boire`.
 - [ ] TC7 `ReviewLoopWorkflow` returns the candidate on approval with `attempts=1` and `approved=True`; the player sets `review_score` from the verdict.
 - [ ] TC8 `ReviewLoopWorkflow`, on rejection, calls `create` again with the previous candidate and the feedback, and returns the second candidate when approved with `attempts=2`.
 - [ ] TC9 `ReviewLoopWorkflow`, after `max_attempts` rejections, returns `approved=False` with `candidate=None`; the player marks the dialog `COMPLETED` and shows the wrap-up.
@@ -798,8 +798,8 @@ Note on `EXERCISE_TYPES`: the intent suggested switching dialog practice like th
 ### Unit Tests
 - [x] `tests/test_dialog_models.py`: TC1
 - [x] `tests/test_dialog_prompts.py`: TC2, TC13, TC16
-- [ ] `tests/test_dialog_turn_creator.py`: TC3, JSON parsing, TC4, TC5, TC6, TC20 (parse-step filtering)
-- [ ] `tests/test_dialog_turn_reviewer.py`: hard-failure short-circuit (empty or overlong reply, no LLM call)
+- [x] `tests/test_dialog_turn_creator.py`: TC3, JSON parsing, TC4, TC5, TC6, TC20 (parse-step filtering)
+- [x] `tests/test_dialog_turn_reviewer.py`: hard-failure short-circuit (empty or overlong reply, no LLM call)
 - [x] `tests/test_review_loop.py`: TC7, TC8, TC9 with stub creator and reviewer, no LLM
 - [ ] `tests/test_dialog_player.py`: TC10, TC11, TC12, TC19, full mock dialog (AC1)
 
